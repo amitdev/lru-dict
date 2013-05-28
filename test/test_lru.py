@@ -8,6 +8,11 @@ class TestLRU(unittest.TestCase):
     def setUp(self):
         pass
 
+
+    def test_invalid_size(self):
+        self.assertRaises(ValueError, LRU, -1)
+        self.assertRaises(ValueError, LRU, 0)
+
     def test_empty(self):
         l = LRU(1)
         self.assertEquals([], l.keys())

@@ -28,7 +28,7 @@ node_dealloc(Node* self)
 {
 	Py_XDECREF(self->value);
 	node_remove(self);
-    PyObject_Del((PyObject*)self);
+	PyObject_Del((PyObject*)self);
 }
 
 static PyObject*
@@ -38,45 +38,45 @@ node_repr(Node* self)
 }
 
 static PyTypeObject NodeType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                       /* ob_size */
-    "lru.Node",              /* tp_name */
-    sizeof(Node),            /* tp_basicsize */
-    0,                       /* tp_itemsize */
-    (destructor)node_dealloc,/* tp_dealloc */
-    0,                       /* tp_print */
-    0,                       /* tp_getattr */
-    0,                       /* tp_setattr */
-    0,                       /* tp_compare */
-    (reprfunc)node_repr,     /* tp_repr */
-    0,                       /* tp_as_number */
-    0,                       /* tp_as_sequence */
-    0,                       /* tp_as_mapping */
-    0,                       /* tp_hash */
-    0,                       /* tp_call */
-    0,                       /* tp_str */
-    0,                       /* tp_getattro */
-    0,                       /* tp_setattro */
-    0,                       /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,      /* tp_flags */
-    "Linked List Node",      /* tp_doc */
-    0,                       /* tp_traverse */
-    0,                       /* tp_clear */
-    0,                       /* tp_richcompare */
-    0,                       /* tp_weaklistoffset */
-    0,                       /* tp_iter */
-    0,                       /* tp_iternext */
-    0,                       /* tp_methods */
-    0,                       /* tp_members */
-    0,                       /* tp_getset */
-    0,                       /* tp_base */
-    0,                       /* tp_dict */
-    0,                       /* tp_descr_get */
-    0,                       /* tp_descr_set */
-    0,                       /* tp_dictoffset */
-    0,                       /* tp_init */
-    0,                       /* tp_alloc */
-    0,                       /* tp_new */
+		PyObject_HEAD_INIT(NULL)
+		0,                       /* ob_size */
+		"lru.Node",              /* tp_name */
+		sizeof(Node),            /* tp_basicsize */
+		0,                       /* tp_itemsize */
+		(destructor)node_dealloc,/* tp_dealloc */
+		0,                       /* tp_print */
+		0,                       /* tp_getattr */
+		0,                       /* tp_setattr */
+		0,                       /* tp_compare */
+		(reprfunc)node_repr,     /* tp_repr */
+		0,                       /* tp_as_number */
+		0,                       /* tp_as_sequence */
+		0,                       /* tp_as_mapping */
+		0,                       /* tp_hash */
+		0,                       /* tp_call */
+		0,                       /* tp_str */
+		0,                       /* tp_getattro */
+		0,                       /* tp_setattro */
+		0,                       /* tp_as_buffer */
+		Py_TPFLAGS_DEFAULT,      /* tp_flags */
+		"Linked List Node",      /* tp_doc */
+		0,                       /* tp_traverse */
+		0,                       /* tp_clear */
+		0,                       /* tp_richcompare */
+		0,                       /* tp_weaklistoffset */
+		0,                       /* tp_iter */
+		0,                       /* tp_iternext */
+		0,                       /* tp_methods */
+		0,                       /* tp_members */
+		0,                       /* tp_getset */
+		0,                       /* tp_base */
+		0,                       /* tp_dict */
+		0,                       /* tp_descr_get */
+		0,                       /* tp_descr_set */
+		0,                       /* tp_dictoffset */
+		0,                       /* tp_init */
+		0,                       /* tp_alloc */
+		0,                       /* tp_new */
 };
 
 typedef struct {
@@ -84,13 +84,13 @@ typedef struct {
 	PyObject * dict;
 	Node * first;
 	Node * last;
-    unsigned int size;
+	Py_ssize_t size;
 } LRU;
 
 static Py_ssize_t
 lru_length(LRU *self)
 {
-    return PyDict_Size(self->dict);
+	return PyDict_Size(self->dict);
 }
 
 static PyObject *
@@ -116,7 +116,8 @@ lru_ass_sub(LRU *self, PyObject *key, PyObject *value)
 	int res = 0;
 	Node *node = NULL;
 
-	if (value != NULL) {
+	if (value) {
+		/* Going to add/update self->dict, so adjust lru list */
 		node = PyObject_NEW(Node, &NodeType);
 		node->key = key;
 		node->value = value;
@@ -141,6 +142,7 @@ lru_ass_sub(LRU *self, PyObject *key, PyObject *value)
 			self->last = self->first;
 		}
 	} else {
+		/* Deleting an entry. Adjust first/last properly */
 		Node *n = GET_NODE(self->dict, key);
 		if (n != NULL && PyObject_TypeCheck(n, &NodeType)) {
 			if (n == self->first) {
@@ -162,35 +164,35 @@ lru_ass_sub(LRU *self, PyObject *key, PyObject *value)
 }
 
 static PyMappingMethods LRU_as_mapping = {
-    (lenfunc)lru_length,        /*mp_length*/
-    (binaryfunc)lru_subscript,  /*mp_subscript*/
-    (objobjargproc)lru_ass_sub, /*mp_ass_subscript*/
+		(lenfunc)lru_length,        /*mp_length*/
+		(binaryfunc)lru_subscript,  /*mp_subscript*/
+		(objobjargproc)lru_ass_sub, /*mp_ass_subscript*/
 };
 
 static PyObject *
 LRU_keys(LRU *self) {
 	register PyObject *v;
 	v = PyList_New(lru_length(self));
-    if (v == NULL)
-        return NULL;
+	if (v == NULL)
+		return NULL;
 
-    Node *curr = self->first;
-    int i = 0;
+	Node *curr = self->first;
+	int i = 0;
 
-    while (curr != NULL) {
- 	   Node *node = curr;
- 	   Py_XINCREF(node->key);
- 	   PyList_SET_ITEM(v, i++, node->key);
- 	   curr = curr->next;
-    }
-    Py_INCREF(v);
-    return v;
+	while (curr) {
+		Node *node = curr;
+		Py_XINCREF(node->key);
+		PyList_SET_ITEM(v, i++, node->key);
+		curr = curr->next;
+	}
+	Py_INCREF(v);
+	return v;
 }
 
 static PyMethodDef LRU_methods[] = {
-    {"keys", (PyCFunction)LRU_keys, METH_NOARGS,
-     PyDoc_STR("L.keys() -> list of L's keys in MRU order")},
-    {NULL,	NULL},
+		{"keys", (PyCFunction)LRU_keys, METH_NOARGS,
+				PyDoc_STR("L.keys() -> list of L's keys in MRU order")},
+				{NULL,	NULL},
 };
 
 static PyObject*
@@ -202,82 +204,86 @@ LRU_repr(LRU* self)
 static int
 LRU_init(LRU *self, PyObject *args, PyObject *kwds)
 {
-	if (!PyArg_ParseTuple(args, "I", &self->size)) {
+	if (!PyArg_ParseTuple(args, "n", &self->size)) {
+		return -1;
+	}
+	if ((Py_ssize_t)self->size <= 0) {
+		PyErr_SetString(PyExc_ValueError, "Size should be a positive number");
 		return -1;
 	}
 	self->dict = PyDict_New();
 	self->first = self->last = NULL;
-    return 0;
+	return 0;
 }
 
 static void
 LRU_dealloc(LRU *self)
 {
-   Py_XDECREF(self->dict);
-   PyObject_Del((PyObject*)self);
+	Py_XDECREF(self->dict);
+	PyObject_Del((PyObject*)self);
 }
 
 static PyTypeObject LRUType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                       /* ob_size */
-    "lru.LRU",               /* tp_name */
-    sizeof(LRU),             /* tp_basicsize */
-    0,                       /* tp_itemsize */
-    (destructor)LRU_dealloc, /* tp_dealloc */
-    0,                       /* tp_print */
-    0,                       /* tp_getattr */
-    0,                       /* tp_setattr */
-    0,                       /* tp_compare */
-    (reprfunc)LRU_repr,      /* tp_repr */
-    0,                       /* tp_as_number */
-    0,                       /* tp_as_sequence */
-    &LRU_as_mapping,         /* tp_as_mapping */
-    0,                       /* tp_hash */
-    0,                       /* tp_call */
-    0,                       /* tp_str */
-    0,                       /* tp_getattro */
-    0,                       /* tp_setattro */
-    0,                       /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,      /* tp_flags */
-    0,                       /* tp_doc */
-    0,                       /* tp_traverse */
-    0,                       /* tp_clear */
-    0,                       /* tp_richcompare */
-    0,                       /* tp_weaklistoffset */
-    0,                       /* tp_iter */
-    0,                       /* tp_iternext */
-    LRU_methods,             /* tp_methods */
-    0,                       /* tp_members */
-    0,                       /* tp_getset */
-    0,                       /* tp_base */
-    0,                       /* tp_dict */
-    0,                       /* tp_descr_get */
-    0,                       /* tp_descr_set */
-    0,                       /* tp_dictoffset */
-    (initproc)LRU_init,      /* tp_init */
-    0,                       /* tp_alloc */
-    0,                       /* tp_new */
+		PyObject_HEAD_INIT(NULL)
+		0,                       /* ob_size */
+		"lru.LRU",               /* tp_name */
+		sizeof(LRU),             /* tp_basicsize */
+		0,                       /* tp_itemsize */
+		(destructor)LRU_dealloc, /* tp_dealloc */
+		0,                       /* tp_print */
+		0,                       /* tp_getattr */
+		0,                       /* tp_setattr */
+		0,                       /* tp_compare */
+		(reprfunc)LRU_repr,      /* tp_repr */
+		0,                       /* tp_as_number */
+		0,                       /* tp_as_sequence */
+		&LRU_as_mapping,         /* tp_as_mapping */
+		0,                       /* tp_hash */
+		0,                       /* tp_call */
+		0,                       /* tp_str */
+		0,                       /* tp_getattro */
+		0,                       /* tp_setattro */
+		0,                       /* tp_as_buffer */
+		Py_TPFLAGS_DEFAULT,      /* tp_flags */
+		0,                       /* tp_doc */
+		0,                       /* tp_traverse */
+		0,                       /* tp_clear */
+		0,                       /* tp_richcompare */
+		0,                       /* tp_weaklistoffset */
+		0,                       /* tp_iter */
+		0,                       /* tp_iternext */
+		LRU_methods,             /* tp_methods */
+		0,                       /* tp_members */
+		0,                       /* tp_getset */
+		0,                       /* tp_base */
+		0,                       /* tp_dict */
+		0,                       /* tp_descr_get */
+		0,                       /* tp_descr_set */
+		0,                       /* tp_dictoffset */
+		(initproc)LRU_init,      /* tp_init */
+		0,                       /* tp_alloc */
+		0,                       /* tp_new */
 };
 
 PyMODINIT_FUNC
 initlru(void)
 {
-    PyObject *m;
+	PyObject *m;
 
-    NodeType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&NodeType) < 0)
-        return;
+	NodeType.tp_new = PyType_GenericNew;
+	if (PyType_Ready(&NodeType) < 0)
+		return;
 
-    LRUType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&LRUType) < 0)
-        return;
+	LRUType.tp_new = PyType_GenericNew;
+	if (PyType_Ready(&LRUType) < 0)
+		return;
 
-    m = Py_InitModule3("lru", NULL, "lru module");
-    if (m == NULL)
-        return;
+	m = Py_InitModule3("lru", NULL, "lru module");
+	if (m == NULL)
+		return;
 
-    Py_INCREF(&NodeType);
-    Py_INCREF(&LRUType);
-    PyModule_AddObject(m, "Node", (PyObject *) &NodeType);
-    PyModule_AddObject(m, "LRU", (PyObject *) &LRUType);
+	Py_INCREF(&NodeType);
+	Py_INCREF(&LRUType);
+	PyModule_AddObject(m, "Node", (PyObject *) &NodeType);
+	PyModule_AddObject(m, "LRU", (PyObject *) &LRUType);
 }
