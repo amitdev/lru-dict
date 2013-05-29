@@ -36,6 +36,22 @@ class TestLRU(unittest.TestCase):
        	        with self.assertRaises(KeyError):
                     l[i]
 
+    def test_delete_multiple(self):
+        for size in SIZES:
+            l = LRU(size)
+            n = size*2
+            for i in xrange(n):
+                l[i] = str(i)
+            for i in xrange(size,n,2):
+                del l[i]
+            self.assertEquals(range(n-1,size,-2), l.keys())
+            for i in xrange(0,size):
+       	        with self.assertRaises(KeyError):
+                    l[i]
+            for i in xrange(size,n,2):
+       	        with self.assertRaises(KeyError):
+                    l[i]
+
     def test_add_multiple(self):
         for size in SIZES:
             l = LRU(size)

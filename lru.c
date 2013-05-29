@@ -1,5 +1,36 @@
 #include <Python.h>
 
+/*
+ * This is a simple implementation of LRU Dict that uses a Python dict and an associated doubly linked
+ * list to keep track of recently inserted/accessed items.
+ *
+ * Dict will store: key -> Node mapping, where Node is a linked list node.
+ * The Node itself will contain the value as well as the key.
+ *
+ * For eg:
+ *
+ * >>> l = LRU(2)
+ * >>> l[0] = 'foo'
+ * >>> l[1] = 'bar'
+ *
+ * can be visualised as:
+ *
+ *             ---+--(hash(0)--+--hash(1)--+
+ * self->dict  ...|            |           |
+ *             ---+-----|------+---------|-+
+ *                      |                |
+ *                +-----v------+   +-----v------+
+ * self->first--->|<'foo'>, <0>|-->|<'bar'>, <1>|<---self->last
+ *             +--|            |<--|            |--+
+ *             |  +------------+   +------------+  |
+ *             v                                   v
+ *           NULL                                 NULL
+ *
+ *  The invariant is to maintain the list to reflect the LRU order of items in the dict.
+ *  self->first will point to the MRU item and self-last to LRU item. Size of list will not
+ *  grow beyond size of LRU dict.
+ *
+ */
 #define GET_NODE(d, key) ((Node *) (d)->ob_type->tp_as_mapping->mp_subscript((d), (key)))
 #define PUT_NODE(d, key, node) (d->ob_type->tp_as_mapping->mp_ass_subscript(d, key, (PyObject *)node))
 
@@ -129,6 +160,9 @@ lru_ass_sub(LRU *self, PyObject *key, PyObject *value)
 			Node *n = self->last;
 			if (n) {
 				self->last = n->prev;
+				if (self->last == NULL) {
+					self->first = NULL;
+				}
 				PyDict_DelItem(self->dict, n->key);
 			}
 		}
@@ -223,6 +257,18 @@ LRU_dealloc(LRU *self)
 	PyObject_Del((PyObject*)self);
 }
 
+PyDoc_STRVAR(lru_doc,
+"LRU(size) -> new LRU dict that can store upto size elements\n"
+"An LRU dict behaves like a standard dict, except that it stores only fixed\n"
+"set of elements. Once the size overflows, it evicts least recently used items.\n\n"
+"Eg:\n"
+">>> l = LRU(3)\n"
+">>> for i in range(5):\n"
+">>>   l[i] = str(i)\n"
+">>> l.keys()\n"
+"[2,3,4]\n\n"
+"Note: An LRU(n) can be thought of as a dict that will have the most recently accessed n items.\n");
+
 static PyTypeObject LRUType = {
 		PyObject_HEAD_INIT(NULL)
 		0,                       /* ob_size */
@@ -245,7 +291,7 @@ static PyTypeObject LRUType = {
 		0,                       /* tp_setattro */
 		0,                       /* tp_as_buffer */
 		Py_TPFLAGS_DEFAULT,      /* tp_flags */
-		0,                       /* tp_doc */
+		lru_doc,                 /* tp_doc */
 		0,                       /* tp_traverse */
 		0,                       /* tp_clear */
 		0,                       /* tp_richcompare */
