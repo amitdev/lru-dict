@@ -31,8 +31,9 @@
  *  grow beyond size of LRU dict.
  *
  */
-#define GET_NODE(d, key) ((Node *) (d)->ob_type->tp_as_mapping->mp_subscript((d), (key)))
-#define PUT_NODE(d, key, node) (d->ob_type->tp_as_mapping->mp_ass_subscript(d, key, (PyObject *)node))
+#define GET_NODE(d, key) (Node *) (d)->ob_type->tp_as_mapping->mp_subscript((d), (key))
+#define PUT_NODE(d, key, node) (d)->ob_type->tp_as_mapping->mp_ass_subscript((d), (key), ((PyObject *)node))
+#define OBJ_INCRFED(obj) Py_INCREF(obj), obj
 
 typedef struct _Node {
 	PyObject_HEAD
@@ -204,28 +205,61 @@ static PyMappingMethods LRU_as_mapping = {
 };
 
 static PyObject *
-LRU_keys(LRU *self) {
+collect(LRU *self, PyObject * (*getterfunc)(Node *)) {
 	register PyObject *v;
 	v = PyList_New(lru_length(self));
 	if (v == NULL)
 		return NULL;
-
 	Node *curr = self->first;
 	int i = 0;
 
 	while (curr) {
 		Node *node = curr;
-		Py_XINCREF(node->key);
-		PyList_SET_ITEM(v, i++, node->key);
+		PyList_SET_ITEM(v, i++, getterfunc(node));
 		curr = curr->next;
 	}
-	Py_INCREF(v);
 	return v;
+}
+
+static PyObject *
+get_key(Node *node) {
+	return OBJ_INCRFED(node->key);
+}
+
+static PyObject *
+LRU_keys(LRU *self) {
+	return collect(self, get_key);
+}
+
+static PyObject *
+get_value(Node *node) {
+	return OBJ_INCRFED(node->value);
+}
+
+static PyObject *
+LRU_values(LRU *self) {
+	return collect(self, get_value);
+}
+
+static PyObject *
+get_item(Node *node) {
+	PyObject *tuple = PyTuple_New(2);
+	PyTuple_SET_ITEM(tuple, 0, (OBJ_INCRFED(node->key)));
+	PyTuple_SET_ITEM(tuple, 1, (OBJ_INCRFED(node->value)));
+	return tuple;
+}
+static PyObject *
+LRU_items(LRU *self) {
+	return collect(self, get_item);
 }
 
 static PyMethodDef LRU_methods[] = {
 		{"keys", (PyCFunction)LRU_keys, METH_NOARGS,
 				PyDoc_STR("L.keys() -> list of L's keys in MRU order")},
+		{"values", (PyCFunction)LRU_values, METH_NOARGS,
+				PyDoc_STR("L.values() -> list of L's values in MRU order")},
+		{"items", (PyCFunction)LRU_items, METH_NOARGS,
+				PyDoc_STR("L.items() -> list of L's items (key,value) in MRU order")},
 				{NULL,	NULL},
 };
 
