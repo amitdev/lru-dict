@@ -4,7 +4,7 @@ LRU Dict
 A fixed size dict like container which evicts Least Recently Used (LRU) items
 once size limit is exceeded. There are many python implementations available
 which does similar things. This is a fast and efficient C implementation which
-is not thread safe. If you are looking for pure python version, look `else where <www.google.com/search?q=python+lru+dict>`_.
+is not thread safe. If you are looking for pure python version, look `else where <http://www.google.com/search?q=python+lru+dict>`_.
 
 Usage
 =====
@@ -15,7 +15,7 @@ This can be used to build a LRU cache. Usage is almost like a dict.
 
   from lru import LRU
   l = LRU(5)         # Create an LRU container that can hold 5 items
-  for i in range(0):
+  for i in range(5):
      l[i] = str(i)
   print l.items()    # Prints items in MRU order
   # Would print [(4, '4'), (3, '3'), (2, '2'), (1, '1'), (0, '0')]
@@ -41,4 +41,6 @@ When to use this
 ================
 
 Like mentioned above there are many python implementations of an LRU. Use this
-if you need a faster and memory efficient alternative.
+if you need a faster and memory efficient alternative. It is implemented with a
+dict and associated linked list to keep track of LRU order. See code for a more
+detailed explanation.
