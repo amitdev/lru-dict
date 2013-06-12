@@ -364,6 +364,5 @@ initlru(void)
 
 	Py_INCREF(&NodeType);
 	Py_INCREF(&LRUType);
-	PyModule_AddObject(m, "Node", (PyObject *) &NodeType);
 	PyModule_AddObject(m, "LRU", (PyObject *) &LRUType);
 }

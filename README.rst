@@ -37,6 +37,11 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   # Would print [(3, '3'), (5, '5'), (2, '2'), (1, '1')]
 
 
+Install
+=======
+
+``pip install lru-dict`` or ``easy_install lru_dict``.
+
 When to use this
 ================
 
