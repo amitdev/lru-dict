@@ -41,11 +41,13 @@ Install
 =======
 
 ::
+
   pip install lru-dict
 
 or
 
 ::
+
   easy_install lru_dict
 
 
@@ -56,27 +58,9 @@ Like mentioned above there are many python implementations of an LRU. Use this
 if you need a faster and memory efficient alternative. It is implemented with a
 dict and associated linked list to keep track of LRU order. See code for a more
 detailed explanation. To see an indicative comparison with a pure python module,
-consider the following benchmark against `pylru <https://pypi.python.org/pypi/pylru/>`_
-(just chosen at random, it should be similar with others as well).
-
-.. code:: python
-  import sys
-  import time
-  import resource
-
-  s = sys.argv[1].split('.')
-  lru = __import__(s[0]).__dict__[s[1]]
-
-  m = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-  t = time.clock()
-
-  cache = lru(1000000)
-  for i in xrange(1100000):
-    cache[i] = i
-
-  print "Time : %r s, Memory : %r Kb" % (time.clock()-t,
-        resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - m)
-
+consider a `benchmark <https://gist.github.com/amitdev/5773979>`_ against
+`pylru <https://pypi.python.org/pypi/pylru/>`_ (just chosen at random, it should
+be similar with other python implementations as well).
 
 ::
 
