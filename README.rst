@@ -40,7 +40,14 @@ This can be used to build a LRU cache. Usage is almost like a dict.
 Install
 =======
 
-``pip install lru-dict`` or ``easy_install lru_dict``.
+::
+  pip install lru-dict
+
+or
+
+::
+  easy_install lru_dict
+
 
 When to use this
 ================
@@ -48,4 +55,33 @@ When to use this
 Like mentioned above there are many python implementations of an LRU. Use this
 if you need a faster and memory efficient alternative. It is implemented with a
 dict and associated linked list to keep track of LRU order. See code for a more
-detailed explanation.
+detailed explanation. To see an indicative comparison with a pure python module,
+consider the following benchmark against `pylru <https://pypi.python.org/pypi/pylru/>`_
+(just chosen at random, it should be similar with others as well).
+
+.. code:: python
+  import sys
+  import time
+  import resource
+
+  s = sys.argv[1].split('.')
+  lru = __import__(s[0]).__dict__[s[1]]
+
+  m = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+  t = time.clock()
+
+  cache = lru(1000000)
+  for i in xrange(1100000):
+    cache[i] = i
+
+  print "Time : %r s, Memory : %r Kb" % (time.clock()-t,
+        resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - m)
+
+
+::
+
+  $ python bench.py pylru.lrucache
+  Time : 3.31 s, Memory : 453672 Kb
+  $ python bench.py lru.LRU
+  Time : 0.23 s, Memory : 124328 Kb
+
