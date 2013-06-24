@@ -3,8 +3,8 @@ LRU Dict
 
 A fixed size dict like container which evicts Least Recently Used (LRU) items
 once size limit is exceeded. There are many python implementations available
-which does similar things. This is a fast and efficient C implementation which
-is not thread safe. If you are looking for pure python version, look `else where <http://www.google.com/search?q=python+lru+dict>`_.
+which does similar things. This is a fast and efficient C implementation.
+If you are looking for pure python version, look `else where <http://www.google.com/search?q=python+lru+dict>`_.
 
 Usage
 =====
