@@ -126,6 +126,18 @@ lru_length(LRU *self)
 }
 
 static PyObject *
+LRU_contains(LRU *self, PyObject *args)
+{
+	PyObject *key;
+	if (!PyArg_ParseTuple(args, "O", &key))
+		return NULL;
+	if (PyDict_Contains(self->dict, key))
+		Py_RETURN_TRUE;
+	else
+		Py_RETURN_FALSE;
+}
+
+static PyObject *
 lru_subscript(LRU *self, register PyObject *key)
 {
 	Node *node = GET_NODE(self->dict, key);
@@ -140,6 +152,30 @@ lru_subscript(LRU *self, register PyObject *key)
 		return node->value;
 	}
 	return (PyObject *) node;
+}
+
+static PyObject *
+LRU_get(LRU *self, PyObject *args)
+{
+	PyObject *key;
+	PyObject *instead;
+
+	if (!PyArg_ParseTuple(args, "OO", &key, &instead))
+		return NULL;
+	if (PyDict_Contains(self->dict, key))
+		return lru_subscript(self, key);
+	return (OBJ_INCRFED(instead));
+}
+
+void delete_last(LRU* self) {
+	Node* n = self->last;
+	if (n) {
+		self->last = n->prev;
+		if (self->last == NULL ) {
+			self->first = NULL;
+		}
+		PyDict_DelItem(self->dict, n->key);
+	}
 }
 
 static int
@@ -158,14 +194,7 @@ lru_ass_sub(LRU *self, PyObject *key, PyObject *value)
 		Py_XINCREF(value);
 
 		if (lru_length(self) == self->size) {
-			Node *n = self->last;
-			if (n) {
-				self->last = n->prev;
-				if (self->last == NULL) {
-					self->first = NULL;
-				}
-				PyDict_DelItem(self->dict, n->key);
-			}
+			delete_last(self);
 		}
 
 		if (self->first != NULL) {
@@ -254,12 +283,16 @@ LRU_items(LRU *self) {
 }
 
 static PyMethodDef LRU_methods[] = {
-		{"keys", (PyCFunction)LRU_keys, METH_NOARGS,
-				PyDoc_STR("L.keys() -> list of L's keys in MRU order")},
-		{"values", (PyCFunction)LRU_values, METH_NOARGS,
-				PyDoc_STR("L.values() -> list of L's values in MRU order")},
-		{"items", (PyCFunction)LRU_items, METH_NOARGS,
-				PyDoc_STR("L.items() -> list of L's items (key,value) in MRU order")},
+				{"keys", (PyCFunction)LRU_keys, METH_NOARGS,
+								PyDoc_STR("L.keys() -> list of L's keys in MRU order")},
+				{"values", (PyCFunction)LRU_values, METH_NOARGS,
+								PyDoc_STR("L.values() -> list of L's values in MRU order")},
+				{"items", (PyCFunction)LRU_items, METH_NOARGS,
+								PyDoc_STR("L.items() -> list of L's items (key,value) in MRU order")},
+				{"has_key",	(PyCFunction)LRU_contains, METH_VARARGS,
+								PyDoc_STR("L.has_key(key) -> Check if key is there in L")},
+				{"get",	(PyCFunction)LRU_get, METH_VARARGS,
+								PyDoc_STR("L.get(key, instead) -> If L has key return its value, otherwise instead")},
 				{NULL,	NULL},
 };
 

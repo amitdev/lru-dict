@@ -73,6 +73,7 @@ class TestLRU(unittest.TestCase):
                 l[i] = str(i)
             for i in xrange(size):
                 self.assertEquals(l[i], str(i))
+                self.assertEquals(l.get(i,None), str(i))
 
     def test_access(self):
         for size in SIZES:
@@ -83,6 +84,18 @@ class TestLRU(unittest.TestCase):
             self._check_kvi(range(n-1,size-1,-1), l)
             for i in xrange(size, n):
                 self.assertEquals(l[i], str(i))
+                self.assertEquals(l.get(i,None), str(i))
+
+    def test_has_key(self):
+        for size in SIZES:
+            l = LRU(size)
+            for i in xrange(2*size):
+                l[i] = str(i)
+                self.assertTrue(l.has_key(i))
+            for i in xrange(size, 2*size):
+                self.assertTrue(l.has_key(i))
+            for i in xrange(size):
+                self.assertFalse(l.has_key(i))
 
 if __name__ == '__main__':
     unittest.main()
