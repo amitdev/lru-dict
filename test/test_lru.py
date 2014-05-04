@@ -116,7 +116,13 @@ class TestLRU(unittest.TestCase):
             l.set_size(size+10-1)
             self.assertTrue(len(l) == size+10-1)
 
-
+    def test_clear(self):
+        for size in SIZES:
+            l = LRU(size)
+            for i in range(size+5):
+                l[i] = str(i)
+            l.clear()
+            self.assertTrue(len(l) == 0)
 
 if __name__ == '__main__':
     unittest.main()

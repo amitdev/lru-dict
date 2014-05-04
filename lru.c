@@ -310,6 +310,25 @@ LRU_set_size(LRU *self, PyObject *args, PyObject *kwds)
 }
 
 static PyObject *
+LRU_clear(LRU *self)
+{
+    while (lru_length(self) > 0) {
+        //delete obsolete items
+        Node *n = self->last;
+        if (n) {
+            self->last = n->prev;
+            if (self->last == NULL) {
+                self->first = NULL;
+            }
+            PyDict_DelItem(self->dict, n->key);
+        }
+    }
+    Py_INCREF(Py_None);
+    return (PyObject *) Py_None;
+}
+
+
+static PyObject *
 LRU_get_size(LRU *self)
 {
     return Py_BuildValue("i", self->size);
@@ -331,6 +350,8 @@ static PyMethodDef LRU_methods[] = {
 								PyDoc_STR("L.set_size() -> set size of LRU")},
         		{"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
 								PyDoc_STR("L.get_size() -> get size of LRU")},
+        		{"clear", (PyCFunction)LRU_clear, METH_NOARGS,
+								PyDoc_STR("L.clear() -> clear LRU")},
 				{NULL,	NULL},
 };
 
