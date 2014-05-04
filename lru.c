@@ -282,6 +282,41 @@ LRU_items(LRU *self) {
 	return collect(self, get_item);
 }
 
+static PyObject *
+LRU_set_size(LRU *self, PyObject *args, PyObject *kwds)
+{
+    Py_ssize_t newSize;
+	if (!PyArg_ParseTuple(args, "n", &newSize)) {
+		return NULL;
+	}
+	if (newSize <= 0) {
+		PyErr_SetString(PyExc_ValueError, "Size should be a positive number");
+		return NULL;
+	}
+    while (lru_length(self) > newSize) {
+        //delete obsolete items
+        Node *n = self->last;
+        if (n) {
+            self->last = n->prev;
+            if (self->last == NULL) {
+                self->first = NULL;
+            }
+            PyDict_DelItem(self->dict, n->key);
+        }
+    }
+
+    self->size = newSize;
+    Py_INCREF(Py_None);
+    return (PyObject *) Py_None;
+}
+
+static PyObject *
+LRU_get_size(LRU *self)
+{
+    return Py_BuildValue("i", self->size);
+}
+
+
 static PyMethodDef LRU_methods[] = {
 				{"keys", (PyCFunction)LRU_keys, METH_NOARGS,
 								PyDoc_STR("L.keys() -> list of L's keys in MRU order")},
@@ -293,6 +328,10 @@ static PyMethodDef LRU_methods[] = {
 								PyDoc_STR("L.has_key(key) -> Check if key is there in L")},
 				{"get",	(PyCFunction)LRU_get, METH_VARARGS,
 								PyDoc_STR("L.get(key, instead) -> If L has key return its value, otherwise instead")},
+			        {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
+								PyDoc_STR("L.set_size() -> set size of LRU")},
+        			{"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
+								PyDoc_STR("L.get_size() -> get size of LRU")},
 				{NULL,	NULL},
 };
 
