@@ -304,7 +304,6 @@ LRU_set_size(LRU *self, PyObject *args, PyObject *kwds)
             PyDict_DelItem(self->dict, n->key);
         }
     }
-
     self->size = newSize;
     Py_INCREF(Py_None);
     return (PyObject *) Py_None;
@@ -328,9 +327,9 @@ static PyMethodDef LRU_methods[] = {
 								PyDoc_STR("L.has_key(key) -> Check if key is there in L")},
 				{"get",	(PyCFunction)LRU_get, METH_VARARGS,
 								PyDoc_STR("L.get(key, instead) -> If L has key return its value, otherwise instead")},
-			        {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
+                {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
 								PyDoc_STR("L.set_size() -> set size of LRU")},
-        			{"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
+        		{"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
 								PyDoc_STR("L.get_size() -> get size of LRU")},
 				{NULL,	NULL},
 };

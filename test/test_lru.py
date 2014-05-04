@@ -97,5 +97,26 @@ class TestLRU(unittest.TestCase):
             for i in xrange(size):
                 self.assertFalse(l.has_key(i))
 
+    def test_capacity_get(self):
+        for size in SIZES:
+            l = LRU(size)
+            self.assertTrue(size == l.get_size())
+
+    def test_capacity_set(self):
+        for size in SIZES:
+            l = LRU(size)
+            for i in range(size+5):
+                l[i] = str(i)
+            l.set_size(size+10)
+            self.assertTrue(size+10 == l.get_size())
+            self.assertTrue(len(l) == size)
+            for i in range(size+20):
+                l[i] = str(i)
+            self.assertTrue(len(l) == size+10)
+            l.set_size(size+10-1)
+            self.assertTrue(len(l) == size+10-1)
+
+
+
 if __name__ == '__main__':
     unittest.main()
