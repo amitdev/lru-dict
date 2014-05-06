@@ -26,7 +26,7 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   # Would print [(5, '5'), (4, '4'), (3, '3'), (2, '2'), (1, '1')]
 
   l[3]               # Accessing an item would make it MRU
-  l.items()
+  print l.items()
   # Would print [(3, '3'), (5, '5'), (4, '4'), (2, '2'), (1, '1')]
   # Now 3 is in front
 
@@ -45,7 +45,12 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   print l.get_size()
   # Would print 3
 
+  l.get_hits()
+  l.get_misses()
 
+  l.clear()
+  print l.items()
+  #Would print []
 
 Install
 =======
