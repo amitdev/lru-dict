@@ -144,7 +144,9 @@ lru_subscript(LRU *self, register PyObject *key)
 {
     Node *node = GET_NODE(self->dict, key);
     if (node != NULL && PyObject_TypeCheck(node, &NodeType)) {
-        if (self->first != self->last) {
+        if (node != self->first && self->first != self->last) {
+            if (self->last == node)
+                self->last = node->prev;
             node_remove(node);
             node->next = self->first;
             self->first->prev = node;
@@ -172,7 +174,8 @@ LRU_get(LRU *self, PyObject *args)
     return (OBJ_INCRFED(instead));
 }
 
-void delete_last(LRU* self)
+static void
+delete_last(LRU* self)
 {
     Node* n = self->last;
     if (n) {
@@ -318,15 +321,10 @@ static PyObject *
 LRU_clear(LRU *self)
 {
 
-    //printf("first  %zd\n", lru_length(self));
     while (lru_length(self) > 0) {
         delete_last(self);
-        //printf("in  %zd\n", lru_length(self));
     }
 
-    //Py_XDECREF(self->dict);
-    //self->dict = PyDict_New();
-    //self->first = self->last = NULL;
     self->hits = 0;
     self->misses = 0;
     Py_INCREF(Py_None);

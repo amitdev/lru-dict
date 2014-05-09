@@ -1,3 +1,4 @@
+import random
 import unittest
 from lru import LRU
 
@@ -122,8 +123,12 @@ class TestLRU(unittest.TestCase):
             for i in range(size+5):
                 l[i] = str(i)
             l.clear()
+            for i in range(size):
+                l[i] = str(i)
+            for i in xrange(size):
+                _ = l[random.randint(0,size-1)]
+            l.clear()
             self.assertTrue(len(l) == 0)
-
 
     def test_hits(self):
         for size in SIZES:
