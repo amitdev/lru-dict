@@ -45,8 +45,8 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   print l.get_size()
   # Would print 3
 
-  l.get_hits()
-  l.get_misses()
+  l.get_stats()
+  # Would print (1, 0)
 
   l.clear()
   print l.items()

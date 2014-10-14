@@ -130,36 +130,33 @@ class TestLRU(unittest.TestCase):
             l.clear()
             self.assertTrue(len(l) == 0)
 
-    def test_hits(self):
+    def test_stats(self):
         for size in SIZES:
             l = LRU(size)
             for i in range(size):
                 l[i] = str(i)
 
+            self.assertTrue(l.get_stats() == (0, 0))
+
             val = l[0]
-            self.assertTrue(l.get_hits() == 1)
-            self.assertTrue(l.get_misses() == 0)
+            self.assertTrue(l.get_stats() == (1, 0))
 
             val = l.get(0, None)
-            self.assertTrue(l.get_hits() == 2)
-            self.assertTrue(l.get_misses() == 0)
+            self.assertTrue(l.get_stats() == (2, 0))
 
             val = l.get(-1, None)
-            self.assertTrue(l.get_hits() == 2)
-            self.assertTrue(l.get_misses() == 1)
+            self.assertTrue(l.get_stats() == (2, 1))
 
             try:
                 val = l[-1]
             except:
                 pass
 
-            self.assertTrue(l.get_hits() == 2)
-            self.assertTrue(l.get_misses() == 2)
+            self.assertTrue(l.get_stats() == (2, 2))
 
             l.clear()
             self.assertTrue(len(l) == 0)
-            self.assertTrue(l.get_hits() == 0)
-            self.assertTrue(l.get_misses() == 0)
+            self.assertTrue(l.get_stats() == (0, 0))
 
 if __name__ == '__main__':
     unittest.main()

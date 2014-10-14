@@ -339,17 +339,10 @@ LRU_get_size(LRU *self)
 }
 
 static PyObject *
-LRU_get_hits(LRU *self)
+LRU_get_stats(LRU *self)
 {
-    return Py_BuildValue("n", self->hits);
+    return Py_BuildValue("nn", self->hits, self->misses);
 }
-
-static PyObject *
-LRU_get_misses(LRU *self)
-{
-    return Py_BuildValue("n", self->misses);
-}
-
 
 static PyMethodDef LRU_methods[] = {
     {"keys", (PyCFunction)LRU_keys, METH_NOARGS,
@@ -368,10 +361,8 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.get_size() -> get size of LRU")},
     {"clear", (PyCFunction)LRU_clear, METH_NOARGS,
                     PyDoc_STR("L.clear() -> clear LRU")},
-    {"get_hits", (PyCFunction)LRU_get_hits, METH_NOARGS,
-                    PyDoc_STR("L.get_hits() -> get number of hits for get() method")},
-    {"get_misses", (PyCFunction)LRU_get_misses, METH_NOARGS,
-                    PyDoc_STR("L.get_misses() -> get number of misses for get() method")},
+    {"get_stats", (PyCFunction)LRU_get_stats, METH_NOARGS,
+                    PyDoc_STR("L.get_stats() -> returns a tuple with cache hits and misses")},
     {NULL,	NULL},
 };
 
