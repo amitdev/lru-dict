@@ -4,7 +4,7 @@ module1 = Extension('lru',
                     sources = ['lru.c'])
 
 setup (name = 'lru-dict',
-       version = '1.0',
+       version = '1.1',
        description = 'An Dict like LRU container.',
        long_description = open('README.rst').read(),
        author='Amit Dev',
@@ -13,7 +13,7 @@ setup (name = 'lru-dict',
        keywords='lru, dict',
        ext_modules = [module1],
        classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
