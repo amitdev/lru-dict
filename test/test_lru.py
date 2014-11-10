@@ -1,13 +1,23 @@
+import gc
 import random
+import sys
 import unittest
 from lru import LRU
 
 SIZES = [1, 2, 10, 1000]
 
+# Only available on debug python builds.
+gettotalrefcount = getattr(sys, 'gettotalrefcount', lambda: 0)
+
 class TestLRU(unittest.TestCase):
 
     def setUp(self):
-        pass
+        gc.collect()
+        self._before_count = gettotalrefcount()
+
+    def tearDown(self):
+        after_count = gettotalrefcount()
+        self.assertEqual(self._before_count, after_count)
 
     def _check_kvi(self, valid_keys, l):
         valid_vals = map(str, valid_keys)
@@ -87,6 +97,13 @@ class TestLRU(unittest.TestCase):
                 self.assertEquals(l[i], str(i))
                 self.assertEquals(l.get(i,None), str(i))
 
+    def test_overwrite(self):
+        l = LRU(1)
+        l[1] = '2'
+        l[1] = '1'
+        self.assertEquals('1', l[1])
+        self._check_kvi([1], l)
+
     def test_has_key(self):
         for size in SIZES:
             l = LRU(size)
@@ -117,6 +134,14 @@ class TestLRU(unittest.TestCase):
             l.set_size(size+10-1)
             self.assertTrue(len(l) == size+10-1)
 
+    def test_unhashable(self):
+        l = LRU(1)
+        self.assertRaises(TypeError, lambda: l[{'a': 'b'}])
+        with self.assertRaises(TypeError):
+            l[['1']] = '2'
+        with self.assertRaises(TypeError):
+            del l[{'1': '1'}]
+
     def test_clear(self):
         for size in SIZES:
             l = LRU(size)
@@ -126,9 +151,20 @@ class TestLRU(unittest.TestCase):
             for i in range(size):
                 l[i] = str(i)
             for i in xrange(size):
-                _ = l[random.randint(0,size-1)]
+                _ = l[random.randint(0, size-1)]
             l.clear()
             self.assertTrue(len(l) == 0)
+
+    def test_get_and_del(self):
+        l = LRU(2)
+        l[1] = '1'
+        self.assertEqual('1', l.get(1))
+        self.assertEqual('1', l.get(2, '1'))
+        self.assertIsNone(l.get(2))
+        self.assertEqual('1', l[1])
+        self.assertRaises(KeyError, lambda: l['2'])
+        with self.assertRaises(KeyError):
+            del l['2']
 
     def test_stats(self):
         for size in SIZES:
