@@ -162,10 +162,11 @@ lru_add_node_at_head(LRU *self, Node* node)
 static void
 lru_delete_last(LRU *self)
 {
+    Node* n = self->last;
+    
     if (!self->last)
         return;
 
-    Node* n = self->last;
     lru_remove_node(self, n);
     PUT_NODE(self->dict, n->key, NULL);
 }
@@ -289,11 +290,13 @@ static PyObject *
 collect(LRU *self, PyObject * (*getterfunc)(Node *))
 {
     register PyObject *v;
+    Node *curr;
+    int i;
     v = PyList_New(lru_length(self));
     if (v == NULL)
         return NULL;
-    Node *curr = self->first;
-    int i = 0;
+    curr = self->first;
+    i = 0;
 
     while (curr) {
         PyList_SET_ITEM(v, i++, getterfunc(curr));
