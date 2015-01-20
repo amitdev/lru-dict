@@ -195,15 +195,18 @@ static PyObject *
 lru_subscript(LRU *self, register PyObject *key)
 {
     Node *node = GET_NODE(self->dict, key);
-    if (node == NULL) {
+    if (!node) {
         self->misses++;
         return NULL;
     }
 
     assert(PyObject_TypeCheck(node, &NodeType));
 
-    lru_remove_node(self, node);
-    lru_add_node_at_head(self, node);
+    /* We don't need to move the node when it's already self->first. */
+    if (node != self->first) {
+        lru_remove_node(self, node);
+        lru_add_node_at_head(self, node);
+    }
 
     self->hits++;
     Py_INCREF(node->value);

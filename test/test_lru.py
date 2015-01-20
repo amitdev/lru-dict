@@ -194,5 +194,36 @@ class TestLRU(unittest.TestCase):
             self.assertTrue(len(l) == 0)
             self.assertTrue(l.get_stats() == (0, 0))
 
+    def test_lru(self):
+        l = LRU(1)
+        l['a'] = 1
+        l['a']
+        self.assertEqual(l.keys(), ['a'])
+        l['b'] = 2
+        self.assertEqual(l.keys(), ['b'])
+
+        l = LRU(2)
+        l['a'] = 1
+        l['b'] = 2
+        self.assertEqual(len(l), 2)
+        l['a']                  # Testing the first one
+        l['c'] = 3
+        self.assertEqual(sorted(l.keys()), ['a', 'c'])
+        l['c']
+        self.assertEqual(sorted(l.keys()), ['a', 'c'])
+
+        l = LRU(3)
+        l['a'] = 1
+        l['b'] = 2
+        l['c'] = 3
+        self.assertEqual(len(l), 3)
+        l['b']                  # Testing the middle one
+        l['d'] = 4
+        self.assertEqual(sorted(l.keys()), ['b', 'c', 'd'])
+        l['d']                  # Testing the last one
+        self.assertEqual(sorted(l.keys()), ['b', 'c', 'd'])
+        l['e'] = 5
+        self.assertEqual(sorted(l.keys()), ['b', 'd', 'e'])
+
 if __name__ == '__main__':
     unittest.main()
