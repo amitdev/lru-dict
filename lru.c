@@ -225,6 +225,7 @@ LRU_get(LRU *self, PyObject *args)
         return NULL;
     
     result = lru_subscript(self, key);
+    PyErr_Clear();  /* GET_NODE sets an exception on miss. Shut it up. */
     if (result)
         return result;
 
