@@ -31,8 +31,13 @@
  *  grow beyond size of LRU dict.
  *
  */
-#define GET_NODE(d, key) (Node *) (d)->ob_type->tp_as_mapping->mp_subscript((d), (key))
-#define PUT_NODE(d, key, node) (d)->ob_type->tp_as_mapping->mp_ass_subscript((d), (key), ((PyObject *)node))
+
+#ifndef Py_TYPE
+ #define Py_TYPE(ob) (((PyObject*)(ob))->ob_type)
+#endif
+
+#define GET_NODE(d, key) (Node *) Py_TYPE(d)->tp_as_mapping->mp_subscript((d), (key))
+#define PUT_NODE(d, key, node) Py_TYPE(d)->tp_as_mapping->mp_ass_subscript((d), (key), ((PyObject *)node))
 
 /* If someone figures out how to enable debug builds with setuptools, you can delete this */
 #if 0
@@ -74,8 +79,7 @@ node_repr(Node* self)
 }
 
 static PyTypeObject NodeType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                       /* ob_size */
+    PyVarObject_HEAD_INIT(NULL, 0)
     "lru.Node",              /* tp_name */
     sizeof(Node),            /* tp_basicsize */
     0,                       /* tp_itemsize */
@@ -458,18 +462,19 @@ LRU_dealloc(LRU *self)
 PyDoc_STRVAR(lru_doc,
 "LRU(size) -> new LRU dict that can store upto size elements\n"
 "An LRU dict behaves like a standard dict, except that it stores only fixed\n"
-"set of elements. Once the size overflows, it evicts least recently used items.\n\n"
+"set of elements. Once the size overflows, it evicts least recently used\n"
+"items.\n\n"
 "Eg:\n"
 ">>> l = LRU(3)\n"
 ">>> for i in range(5):\n"
 ">>>   l[i] = str(i)\n"
 ">>> l.keys()\n"
 "[2,3,4]\n\n"
-"Note: An LRU(n) can be thought of as a dict that will have the most recently accessed n items.\n");
+"Note: An LRU(n) can be thought of as a dict that will have the most\n"
+"recently accessed n items.\n");
 
 static PyTypeObject LRUType = {
-    PyObject_HEAD_INIT(NULL)
-    0,                       /* ob_size */
+    PyVarObject_HEAD_INIT(NULL, 0)
     "lru.LRU",               /* tp_name */
     sizeof(LRU),             /* tp_basicsize */
     0,                       /* tp_itemsize */
@@ -509,24 +514,59 @@ static PyTypeObject LRUType = {
     0,                       /* tp_new */
 };
 
-PyMODINIT_FUNC
-initlru(void)
+#if PY_MAJOR_VERSION >= 3
+  static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "lru",            /* m_name */
+    lru_doc,          /* m_doc */
+    -1,               /* m_size */
+    NULL,             /* m_methods */
+    NULL,             /* m_reload */
+    NULL,             /* m_traverse */
+    NULL,             /* m_clear */
+    NULL,             /* m_free */
+  };
+#endif
+
+static PyObject *
+moduleinit(void)
 {
     PyObject *m;
 
     NodeType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&NodeType) < 0)
-        return;
+        return NULL;
 
     LRUType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&LRUType) < 0)
-        return;
+        return NULL;
 
-    m = Py_InitModule3("lru", NULL, "lru module");
+    #if PY_MAJOR_VERSION >= 3
+        m = PyModule_Create(&moduledef);
+    #else
+        m = Py_InitModule3("lru", NULL, lru_doc);
+    #endif
+
     if (m == NULL)
-        return;
+        return NULL;
 
     Py_INCREF(&NodeType);
     Py_INCREF(&LRUType);
     PyModule_AddObject(m, "LRU", (PyObject *) &LRUType);
+
+    return m;
 }
+
+#if PY_MAJOR_VERSION < 3
+    PyMODINIT_FUNC
+    initlru(void)
+    {
+        moduleinit();
+    }
+#else
+    PyMODINIT_FUNC
+    PyInit_lru(void)
+    {
+        return moduleinit();
+    }
+#endif
