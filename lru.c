@@ -404,7 +404,24 @@ LRU_get_stats(LRU *self)
     return Py_BuildValue("nn", self->hits, self->misses);
 }
 
+
+/* Hack to implement "key in lru" */
+static PySequenceMethods lru_as_sequence = {
+    0,                          /* sq_length */
+    0,                          /* sq_concat */
+    0,                          /* sq_repeat */
+    0,                          /* sq_item */
+    0,                          /* sq_slice */
+    0,                          /* sq_ass_item */
+    0,                          /* sq_ass_slice */
+    LRU_contains,               /* sq_contains */
+    0,                          /* sq_inplace_concat */
+    0,                          /* sq_inplace_repeat */
+};
+
 static PyMethodDef LRU_methods[] = {
+    {"__contains__", (PyCFunction)LRU_contains, METH_O | METH_COEXIST,
+                    PyDoc_STR("L.has_key(key) -> Check if key is there in L")},
     {"keys", (PyCFunction)LRU_keys, METH_NOARGS,
                     PyDoc_STR("L.keys() -> list of L's keys in MRU order")},
     {"values", (PyCFunction)LRU_values, METH_NOARGS,
@@ -485,7 +502,7 @@ static PyTypeObject LRUType = {
     0,                       /* tp_compare */
     (reprfunc)LRU_repr,      /* tp_repr */
     0,                       /* tp_as_number */
-    0,                       /* tp_as_sequence */
+    &lru_as_sequence,        /* tp_as_sequence */
     &LRU_as_mapping,         /* tp_as_mapping */
     0,                       /* tp_hash */
     0,                       /* tp_call */
