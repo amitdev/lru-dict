@@ -87,6 +87,14 @@ class TestLRU(unittest.TestCase):
                 self.assertEqual(l[i], str(i))
                 self.assertEqual(l.get(i,None), str(i))
 
+    def test_contains(self):
+        for size in SIZES:
+            l = LRU(size)
+            for i in range(size):
+                l[i] = str(i)
+            for i in range(size):
+                self.assertTrue(i in l)
+
     def test_access(self):
         for size in SIZES:
             l = LRU(size)

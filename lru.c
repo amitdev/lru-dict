@@ -182,17 +182,28 @@ lru_length(LRU *self)
 }
 
 static PyObject *
-LRU_contains(LRU *self, PyObject *args)
+LRU_contains_key(LRU *self, PyObject *key)
 {
-    PyObject *key;
-    if (!PyArg_ParseTuple(args, "O", &key))
-        return NULL;
-
     if (PyDict_Contains(self->dict, key)) {
         Py_RETURN_TRUE;
     } else {
         Py_RETURN_FALSE;
     }
+}
+
+static PyObject *
+LRU_contains(LRU *self, PyObject *args)
+{
+    PyObject *key;
+    if (!PyArg_ParseTuple(args, "O", &key))
+        return NULL;
+    return LRU_contains_key(self, key);
+}
+
+static int
+LRU_seq_contains(LRU *self, PyObject *key)
+{
+    return PyDict_Contains(self->dict, key);
 }
 
 static PyObject *
@@ -407,21 +418,21 @@ LRU_get_stats(LRU *self)
 
 /* Hack to implement "key in lru" */
 static PySequenceMethods lru_as_sequence = {
-    0,                          /* sq_length */
-    0,                          /* sq_concat */
-    0,                          /* sq_repeat */
-    0,                          /* sq_item */
-    0,                          /* sq_slice */
-    0,                          /* sq_ass_item */
-    0,                          /* sq_ass_slice */
-    LRU_contains,               /* sq_contains */
-    0,                          /* sq_inplace_concat */
-    0,                          /* sq_inplace_repeat */
+    0,                             /* sq_length */
+    0,                             /* sq_concat */
+    0,                             /* sq_repeat */
+    0,                             /* sq_item */
+    0,                             /* sq_slice */
+    0,                             /* sq_ass_item */
+    0,                             /* sq_ass_slice */
+    (objobjproc) LRU_seq_contains, /* sq_contains */
+    0,                             /* sq_inplace_concat */
+    0,                             /* sq_inplace_repeat */
 };
 
 static PyMethodDef LRU_methods[] = {
-    {"__contains__", (PyCFunction)LRU_contains, METH_O | METH_COEXIST,
-                    PyDoc_STR("L.has_key(key) -> Check if key is there in L")},
+    {"__contains__", (PyCFunction)LRU_contains_key, METH_O | METH_COEXIST,
+                    PyDoc_STR("L.__contains__(key) -> Check if key is there in L")},
     {"keys", (PyCFunction)LRU_keys, METH_NOARGS,
                     PyDoc_STR("L.keys() -> list of L's keys in MRU order")},
     {"values", (PyCFunction)LRU_values, METH_NOARGS,

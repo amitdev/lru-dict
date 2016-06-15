@@ -44,6 +44,10 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   # Would print [(3, '3'), (5, '5'), (2, '2')]
   print l.get_size()
   # Would print 3
+  print l.has_key(5)
+  # Would print True
+  print 2 in l
+  # Would print True
 
   l.get_stats()
   # Would print (1, 0)
