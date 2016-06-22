@@ -339,7 +339,7 @@ LRU_peek_first_item(LRU *self)
     if (self->first) {
         PyTuple_SET_ITEM(tuple, 0, self->first->key);
         PyTuple_SET_ITEM(tuple, 1, self->first->value);
-        return tuple
+        return tuple;
     }
     else Py_RETURN_NONE;
 }
@@ -351,7 +351,7 @@ LRU_peek_last_item(LRU *self)
     if (self->last) {
         PyTuple_SET_ITEM(tuple, 0, self->last->key);
         PyTuple_SET_ITEM(tuple, 1, self->last->value);
-        return tuple
+        return tuple;
     }
     else Py_RETURN_NONE;
 }
