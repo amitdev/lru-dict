@@ -167,7 +167,7 @@ static void
 lru_delete_last(LRU *self)
 {
     Node* n = self->last;
-    
+
     if (!self->last)
         return;
 
@@ -238,7 +238,7 @@ LRU_get(LRU *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O|O", &key, &instead))
         return NULL;
-    
+
     result = lru_subscript(self, key);
     PyErr_Clear();  /* GET_NODE sets an exception on miss. Shut it up. */
     if (result)
@@ -330,6 +330,26 @@ get_key(Node *node)
 {
     Py_INCREF(node->key);
     return node->key;
+}
+
+static PyObject *
+LRU_get_first_key(LRU *self)
+{
+    if (self->first) {
+        Py_INCREF(self->first);
+        return self->first->key;
+    }
+    else Py_RETURN_NONE;
+}
+
+static PyObject *
+LRU_get_last_key(LRU *self)
+{
+    if (self->last) {
+        Py_INCREF(self->last);
+        return self->last->key;
+    }
+    else Py_RETURN_NONE;
 }
 
 static PyObject *
@@ -451,6 +471,10 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.clear() -> clear LRU")},
     {"get_stats", (PyCFunction)LRU_get_stats, METH_NOARGS,
                     PyDoc_STR("L.get_stats() -> returns a tuple with cache hits and misses")},
+    {"first_key", (PyCFunction)LRU_get_first_key, METH_NOARGS,
+                    PyDoc_STR("L.get_stats() -> returns the MRU key")},
+    {"last_key", (PyCFunction)LRU_get_last_key, METH_NOARGS,
+                    PyDoc_STR("L.get_stats() -> returns the LRU key")},
     {NULL,	NULL},
 };
 
