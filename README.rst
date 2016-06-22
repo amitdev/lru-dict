@@ -17,7 +17,7 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   from lru import LRU
   l = LRU(5)         # Create an LRU container that can hold 5 items
 
-  print l.first_key(), l.last_key()  #return the MRU key and LRU key
+  print l.peek_first_key(), l.peek_last_key()  #return the MRU key and LRU key
   # Would print None None
 
   for i in range(5):
@@ -25,8 +25,8 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   print l.items()    # Prints items in MRU order
   # Would print [(4, '4'), (3, '3'), (2, '2'), (1, '1'), (0, '0')]
 
-  print l.first_key(), l.last_key()  #return the MRU key and LRU key
-  # Would print 4, 0
+  print l.peek_first_key(), l.peek_last_key()  #return the MRU key and LRU key
+  # Would print 4 0
 
   l[5] = '5'         # Inserting one more item should evict the old item
   print l.items()
