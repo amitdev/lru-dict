@@ -108,17 +108,17 @@ class TestLRU(unittest.TestCase):
 
     def test_peek_first_key(self):
         l = LRU(2)
-        self.assertEqual(None, l.first_key())
+        self.assertEqual(None, l.peek_first_key())
         l[1] = '1'
         l[2] = '2'
-        self.assertEqual(2, l.first_key())
+        self.assertEqual(2, l.peek_first_key())
 
     def test_peek_last_key(self):
         l = LRU(2)
-        self.assertEqual(None, l.last_key())
+        self.assertEqual(None, l.peek_last_key())
         l[1] = '1'
         l[2] = '2'
-        self.assertEqual(1, l.last_key())
+        self.assertEqual(1, l.peek_last_key())
 
     def test_overwrite(self):
         l = LRU(1)
