@@ -16,10 +16,17 @@ This can be used to build a LRU cache. Usage is almost like a dict.
 
   from lru import LRU
   l = LRU(5)         # Create an LRU container that can hold 5 items
+
+  print l.first_key(), l.last_key()  #return the MRU key and LRU key
+  # Would print None None
+
   for i in range(5):
      l[i] = str(i)
   print l.items()    # Prints items in MRU order
   # Would print [(4, '4'), (3, '3'), (2, '2'), (1, '1'), (0, '0')]
+
+  print l.first_key(), l.last_key()  #return the MRU key and LRU key
+  # Would print 4, 0
 
   l[5] = '5'         # Inserting one more item should evict the old item
   print l.items()
@@ -87,4 +94,3 @@ be similar with other python implementations as well).
   Time : 3.31 s, Memory : 453672 Kb
   $ python bench.py lru.LRU
   Time : 0.23 s, Memory : 124328 Kb
-
