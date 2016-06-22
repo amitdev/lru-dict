@@ -106,6 +106,18 @@ class TestLRU(unittest.TestCase):
                 self.assertEqual(l[i], str(i))
                 self.assertEqual(l.get(i,None), str(i))
 
+    def test_get_first_key(self):
+        l = LRU(1)
+        self.assertEqual(None, l.first_key())
+        l[1] = '1'
+        self.assertEqual(1, l.first_key())
+
+    def test_get_last_key(self):
+        l = LRU(1)
+        self.assertEqual(None, l.last_key())
+        l[1] = '1'
+        self.assertEqual(1, l.last_key())
+
     def test_overwrite(self):
         l = LRU(1)
         l[1] = '2'
