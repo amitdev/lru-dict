@@ -333,21 +333,25 @@ get_key(Node *node)
 }
 
 static PyObject *
-LRU_peek_first_key(LRU *self)
+LRU_peek_first_item(LRU *self)
 {
+    PyObject *tuple = PyTuple_New(2);
     if (self->first) {
-        Py_INCREF(self->first);
-        return self->first->key;
+        PyTuple_SET_ITEM(tuple, 0, self->first->key);
+        PyTuple_SET_ITEM(tuple, 1, self->first->value);
+        return tuple
     }
     else Py_RETURN_NONE;
 }
 
 static PyObject *
-LRU_peek_last_key(LRU *self)
+LRU_peek_last_item(LRU *self)
 {
+    PyObject *tuple = PyTuple_New(2);
     if (self->last) {
-        Py_INCREF(self->last);
-        return self->last->key;
+        PyTuple_SET_ITEM(tuple, 0, self->last->key);
+        PyTuple_SET_ITEM(tuple, 1, self->last->value);
+        return tuple
     }
     else Py_RETURN_NONE;
 }
@@ -471,10 +475,10 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.clear() -> clear LRU")},
     {"get_stats", (PyCFunction)LRU_get_stats, METH_NOARGS,
                     PyDoc_STR("L.get_stats() -> returns a tuple with cache hits and misses")},
-    {"peek_first_key", (PyCFunction)LRU_peek_first_key, METH_NOARGS,
-                    PyDoc_STR("L.get_stats() -> returns the MRU key without changing key order")},
-    {"peek_last_key", (PyCFunction)LRU_peek_last_key, METH_NOARGS,
-                    PyDoc_STR("L.get_stats() -> returns the LRU key without changing key order")},
+    {"peek_first_item", (PyCFunction)LRU_peek_first_item, METH_NOARGS,
+                    PyDoc_STR("L.peek_first_item() -> returns the MRU item (key,value) without changing key order")},
+    {"peek_last_item", (PyCFunction)LRU_peek_last_item, METH_NOARGS,
+                    PyDoc_STR("L.peek_last_item() -> returns the LRU item (key,value) without changing key order")},
     {NULL,	NULL},
 };
 
