@@ -337,7 +337,9 @@ LRU_peek_first_item(LRU *self)
 {
     PyObject *tuple = PyTuple_New(2);
     if (self->first) {
+        Py_INCREF(self->first->key);
         PyTuple_SET_ITEM(tuple, 0, self->first->key);
+        Py_INCREF(self->first->value);
         PyTuple_SET_ITEM(tuple, 1, self->first->value);
         return tuple;
     }
@@ -349,7 +351,9 @@ LRU_peek_last_item(LRU *self)
 {
     PyObject *tuple = PyTuple_New(2);
     if (self->last) {
+        Py_INCREF(self->last->key);
         PyTuple_SET_ITEM(tuple, 0, self->last->key);
+        Py_INCREF(self->last->value);
         PyTuple_SET_ITEM(tuple, 1, self->last->value);
         return tuple;
     }
