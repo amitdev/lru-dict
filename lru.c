@@ -335,8 +335,8 @@ get_key(Node *node)
 static PyObject *
 LRU_peek_first_item(LRU *self)
 {
-    PyObject *tuple = PyTuple_New(2);
     if (self->first) {
+        PyObject *tuple = PyTuple_New(2);
         Py_INCREF(self->first->key);
         PyTuple_SET_ITEM(tuple, 0, self->first->key);
         Py_INCREF(self->first->value);
@@ -349,8 +349,8 @@ LRU_peek_first_item(LRU *self)
 static PyObject *
 LRU_peek_last_item(LRU *self)
 {
-    PyObject *tuple = PyTuple_New(2);
     if (self->last) {
+        PyObject *tuple = PyTuple_New(2);
         Py_INCREF(self->last->key);
         PyTuple_SET_ITEM(tuple, 0, self->last->key);
         Py_INCREF(self->last->value);
