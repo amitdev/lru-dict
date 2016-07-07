@@ -167,7 +167,7 @@ static void
 lru_delete_last(LRU *self)
 {
     Node* n = self->last;
-    
+
     if (!self->last)
         return;
 
@@ -238,7 +238,7 @@ LRU_get(LRU *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "O|O", &key, &instead))
         return NULL;
-    
+
     result = lru_subscript(self, key);
     PyErr_Clear();  /* GET_NODE sets an exception on miss. Shut it up. */
     if (result)
@@ -330,6 +330,34 @@ get_key(Node *node)
 {
     Py_INCREF(node->key);
     return node->key;
+}
+
+static PyObject *
+LRU_peek_first_item(LRU *self)
+{
+    if (self->first) {
+        PyObject *tuple = PyTuple_New(2);
+        Py_INCREF(self->first->key);
+        PyTuple_SET_ITEM(tuple, 0, self->first->key);
+        Py_INCREF(self->first->value);
+        PyTuple_SET_ITEM(tuple, 1, self->first->value);
+        return tuple;
+    }
+    else Py_RETURN_NONE;
+}
+
+static PyObject *
+LRU_peek_last_item(LRU *self)
+{
+    if (self->last) {
+        PyObject *tuple = PyTuple_New(2);
+        Py_INCREF(self->last->key);
+        PyTuple_SET_ITEM(tuple, 0, self->last->key);
+        Py_INCREF(self->last->value);
+        PyTuple_SET_ITEM(tuple, 1, self->last->value);
+        return tuple;
+    }
+    else Py_RETURN_NONE;
 }
 
 static PyObject *
@@ -451,6 +479,10 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.clear() -> clear LRU")},
     {"get_stats", (PyCFunction)LRU_get_stats, METH_NOARGS,
                     PyDoc_STR("L.get_stats() -> returns a tuple with cache hits and misses")},
+    {"peek_first_item", (PyCFunction)LRU_peek_first_item, METH_NOARGS,
+                    PyDoc_STR("L.peek_first_item() -> returns the MRU item (key,value) without changing key order")},
+    {"peek_last_item", (PyCFunction)LRU_peek_last_item, METH_NOARGS,
+                    PyDoc_STR("L.peek_last_item() -> returns the LRU item (key,value) without changing key order")},
     {NULL,	NULL},
 };
 
