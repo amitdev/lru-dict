@@ -106,6 +106,24 @@ class TestLRU(unittest.TestCase):
                 self.assertEqual(l[i], str(i))
                 self.assertEqual(l.get(i,None), str(i))
 
+
+    def test_update(self):
+        l = LRU(2)
+        l['a'] = 1
+        self.assertEqual(l['a'], 1)
+        l.update(a=2)
+        self.assertEqual(l['a'], 2)
+        l['b'] = 2
+        self.assertEqual(l['b'], 2)
+        l.update(b=3)
+        self.assertEqual(l['a'], 2)
+        self.assertEqual(l['b'], 3)
+        l.update({'a':1, 'b':2})
+        self.assertEqual(l['a'], 1)
+        self.assertEqual(l['b'], 2)
+        l.update()
+
+
     def test_peek_first_item(self):
         l = LRU(2)
         self.assertEqual(None, l.peek_first_item())
