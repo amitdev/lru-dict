@@ -333,6 +333,28 @@ get_key(Node *node)
 }
 
 static PyObject *
+LRU_update(LRU *self, PyObject *args, PyObject *kwargs)
+{
+	PyObject *key, *value;
+	PyObject *arg = NULL;
+	Py_ssize_t pos = 0;
+
+	if ((PyArg_ParseTuple(args, "|O", &arg))) {
+		if (arg && PyDict_Check(arg)) {
+			while (PyDict_Next(arg, &pos, &key, &value))
+				lru_ass_sub(self, key, value);
+		}
+	}
+	
+	if (kwargs != NULL && PyDict_Check(kwargs)) {
+		while (PyDict_Next(kwargs, &pos, &key, &value))
+			lru_ass_sub(self, key, value);
+	}
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *
 LRU_peek_first_item(LRU *self)
 {
     if (self->first) {
@@ -483,6 +505,8 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.peek_first_item() -> returns the MRU item (key,value) without changing key order")},
     {"peek_last_item", (PyCFunction)LRU_peek_last_item, METH_NOARGS,
                     PyDoc_STR("L.peek_last_item() -> returns the LRU item (key,value) without changing key order")},
+    {"update", (PyCFunction)LRU_update, METH_VARARGS | METH_KEYWORDS,
+                    PyDoc_STR("L.update() -> update value for key in LRU")},
     {NULL,	NULL},
 };
 
