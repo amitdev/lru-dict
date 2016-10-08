@@ -45,7 +45,8 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   # Would print [(3, '3'), (5, '5'), (2, '2'), (1, '1')]
 
   print l.get_size()
-  #Would print 5
+  # Would print 5
+
   l.set_size(3)
   print l.items()
   # Would print [(3, '3'), (5, '5'), (2, '2')]
@@ -59,9 +60,14 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   l.get_stats()
   # Would print (1, 0)
 
+
+  l.update(5='0')           # Update an item
+  print l.items()
+  # Would print [(5, '0'), (3, '3'), (2, '2')]
+
   l.clear()
   print l.items()
-  #Would print []
+  # Would print []
 
 Install
 =======
