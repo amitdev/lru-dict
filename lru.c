@@ -127,7 +127,34 @@ typedef struct {
     Py_ssize_t size;
     Py_ssize_t hits;
     Py_ssize_t misses;
+    PyObject *callback;
 } LRU;
+
+
+static PyObject *
+set_callback(LRU *self, PyObject *args)
+{
+    PyObject *result = NULL;
+    PyObject *temp;
+
+    if (PyArg_ParseTuple(args, "O:set_callback", &temp)) {
+        if (temp == Py_None) {
+            Py_XDECREF(self->callback);
+            self->callback = NULL;
+        } else if (!PyCallable_Check(temp)) {
+            PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+            return NULL;
+        } else {
+            Py_XINCREF(temp);         /* Add a reference to new callback */
+            Py_XDECREF(self->callback);  /* Dispose of previous callback */
+            self->callback = temp;       /* Remember new callback */
+        }
+        /* Boilerplate to return "None" */
+        Py_INCREF(Py_None);
+        result = Py_None;
+    }
+    return result;
+}
 
 static void
 lru_remove_node(LRU *self, Node* node)
@@ -166,10 +193,20 @@ lru_add_node_at_head(LRU *self, Node* node)
 static void
 lru_delete_last(LRU *self)
 {
+    PyObject *arglist;
+    PyObject *result;
     Node* n = self->last;
 
     if (!self->last)
         return;
+
+    if (self->callback) {
+        
+        arglist = Py_BuildValue("OO", n->key, n->value);
+        result = PyObject_CallObject(self->callback, arglist);
+        Py_XDECREF(result);
+        Py_DECREF(arglist);
+    }
 
     lru_remove_node(self, n);
     PUT_NODE(self->dict, n->key, NULL);
@@ -401,6 +438,12 @@ LRU_values(LRU *self)
 }
 
 static PyObject *
+LRU_set_callback(LRU *self, PyObject *args)
+{
+    return set_callback(self, args);
+}
+
+static PyObject *
 get_item(Node *node)
 {
     PyObject *tuple = PyTuple_New(2);
@@ -507,6 +550,8 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.peek_last_item() -> returns the LRU item (key,value) without changing key order")},
     {"update", (PyCFunction)LRU_update, METH_VARARGS | METH_KEYWORDS,
                     PyDoc_STR("L.update() -> update value for key in LRU")},
+    {"set_callback", (PyCFunction)LRU_set_callback, METH_VARARGS,
+                    PyDoc_STR("L.set_callback(callback) -> set a callback to call when an item is evicted.")},
     {NULL,	NULL},
 };
 
@@ -519,9 +564,22 @@ LRU_repr(LRU* self)
 static int
 LRU_init(LRU *self, PyObject *args, PyObject *kwds)
 {
-    if (!PyArg_ParseTuple(args, "n", &self->size)) {
+    static char *kwlist[] = {"size", "callback", NULL};
+    PyObject *callback = NULL;
+    self->callback = NULL;
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "n|O", kwlist, &self->size, &callback)) {
         return -1;
     }
+
+    if (callback && callback != Py_None) {
+        if (!PyCallable_Check(callback)) {
+            PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+            return -1;
+        }
+        Py_XINCREF(callback);
+        self->callback = callback;
+    }
+
     if ((Py_ssize_t)self->size <= 0) {
         PyErr_SetString(PyExc_ValueError, "Size should be a positive number");
         return -1;
@@ -539,15 +597,17 @@ LRU_dealloc(LRU *self)
     if (self->dict) {
         LRU_clear(self);
         Py_DECREF(self->dict);
+        Py_XDECREF(self->callback);
     }
     PyObject_Del((PyObject*)self);
 }
 
 PyDoc_STRVAR(lru_doc,
-"LRU(size) -> new LRU dict that can store upto size elements\n"
+"LRU(size, callback=None) -> new LRU dict that can store up to size elements\n"
 "An LRU dict behaves like a standard dict, except that it stores only fixed\n"
 "set of elements. Once the size overflows, it evicts least recently used\n"
-"items.\n\n"
+"items.  If a callback is set it will call the callback with the evicted key\n"
+" and item.\n\n"
 "Eg:\n"
 ">>> l = LRU(3)\n"
 ">>> for i in range(5):\n"
