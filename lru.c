@@ -149,9 +149,7 @@ set_callback(LRU *self, PyObject *args)
             Py_XDECREF(self->callback);  /* Dispose of previous callback */
             self->callback = temp;       /* Remember new callback */
         }
-        /* Boilerplate to return "None" */
-        Py_INCREF(Py_None);
-        result = Py_None;
+        Py_RETURN_NONE;
     }
     return result;
 }

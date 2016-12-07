@@ -69,6 +69,27 @@ This can be used to build a LRU cache. Usage is almost like a dict.
   print l.items()
   # Would print []
 
+  def evicted(key, value):
+    print "removing: %s, %s" % (key, value)
+
+  l = LRU(1, callback=evicted)
+
+  l[1] = '1'
+  l[2] = '2'
+  # callback would print removing: 1, 1
+
+  l[2] = '3'
+  # doesn't call the evicted callback
+
+  print l.items()
+  # would print [(2, '3')]
+  
+  del l[2]
+  # doesn't call the evicted callback
+
+  print l.items()
+  # would print []
+
 Install
 =======
 

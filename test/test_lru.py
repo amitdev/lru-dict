@@ -285,20 +285,28 @@ class TestLRU(unittest.TestCase):
 
         l = LRU(1, callback=callback)
         l[first_key] = first_value
-        l['b'] = 1
+        l['b'] = 1              # test calling the callback
 
         self.assertEqual(counter[0], 1)
         self.assertEqual(l.keys(), ['b'])
 
-        l['b'] = 2
+        l['b'] = 2              # doesn't call callback
         self.assertEqual(counter[0], 1)
         self.assertEqual(l.keys(), ['b'])
         self.assertEqual(l.values(), [2])
 
+
+        l = LRU(1, callback=callback)
+        l[first_key] = first_value
+
         l.set_callback(None)
-        l['c'] = 1
+        l['c'] = 1              # doesn't call callback
         self.assertEqual(counter[0], 1)
         self.assertEqual(l.keys(), ['c'])
+
+        l.set_callback(callback)
+        del l['c']              # doesn't call callback
+        self.assertEqual(l.keys(), [])
 
 
 if __name__ == '__main__':
