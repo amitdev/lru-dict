@@ -271,5 +271,43 @@ class TestLRU(unittest.TestCase):
         l['e'] = 5
         self.assertEqual(sorted(l.keys()), ['b', 'd', 'e'])
 
+    def test_callback(self):
+
+        counter = [0]
+
+        first_key = 'a'
+        first_value = 1
+
+        def callback(key, value):
+            self.assertEqual(key, first_key)
+            self.assertEqual(value, first_value)
+            counter[0] += 1
+
+        l = LRU(1, callback=callback)
+        l[first_key] = first_value
+        l['b'] = 1              # test calling the callback
+
+        self.assertEqual(counter[0], 1)
+        self.assertEqual(l.keys(), ['b'])
+
+        l['b'] = 2              # doesn't call callback
+        self.assertEqual(counter[0], 1)
+        self.assertEqual(l.keys(), ['b'])
+        self.assertEqual(l.values(), [2])
+
+
+        l = LRU(1, callback=callback)
+        l[first_key] = first_value
+
+        l.set_callback(None)
+        l['c'] = 1              # doesn't call callback
+        self.assertEqual(counter[0], 1)
+        self.assertEqual(l.keys(), ['c'])
+
+        l.set_callback(callback)
+        del l['c']              # doesn't call callback
+        self.assertEqual(l.keys(), [])
+
+
 if __name__ == '__main__':
     unittest.main()
