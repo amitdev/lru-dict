@@ -306,8 +306,18 @@ class TestLRU(unittest.TestCase):
 
         l.set_callback(callback)
         del l['c']              # doesn't call callback
+        self.assertEqual(counter[0], 1)
         self.assertEqual(l.keys(), [])
 
+        l = LRU(2, callback=callback)
+        l['a'] = 1              # test calling the callback
+        l['b'] = 2              # test calling the callback
+
+        self.assertEqual(counter[0], 1)
+        self.assertEqual(l.keys(), ['b', 'a'])
+        l.set_size(1)
+        self.assertEqual(counter[0], 2) # callback invoked
+        self.assertEqual(l.keys(), ['b'])
 
 if __name__ == '__main__':
     unittest.main()
