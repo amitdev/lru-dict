@@ -1,0 +1,14 @@
+build/
+
+# VIM
+*.swp
+*.swo
+*~
+
+# PYTHON
+*.pyc
+*.pyo
+__pycache__/
+
+#PYTEST
+.cache/
