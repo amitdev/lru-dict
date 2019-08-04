@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/amitdev/lru-dict.svg?branch=master)]
+.. image:: https://travis-ci.com/amitdev/lru-dict.svg?branch=master
+    :target: https://travis-ci.com/amitdev/lru-dict
 
 LRU Dict
 ========
