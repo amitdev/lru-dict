@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/amitdev/lru-dict.svg?branch=master)](https://travis-ci.com/amitdev/lru-dict)
+[![Build Status](https://travis-ci.com/amitdev/lru-dict.svg?branch=master)]
 
 LRU Dict
 ========
