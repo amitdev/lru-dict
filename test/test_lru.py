@@ -212,6 +212,17 @@ class TestLRU(unittest.TestCase):
         with self.assertRaises(KeyError):
             del l['2']
 
+    def test_setdefault(self):
+        l = LRU(2)
+        l[1] = '1'
+        val = l.setdefault(1)
+        self.assertEqual('1', val)
+        self.assertEqual((1, 0), l.get_stats())
+        val = l.setdefault(2, '2')
+        self.assertEqual('2', val)
+        self.assertEqual((1, 1), l.get_stats())
+        self.assertEqual(val, l[2])
+
     def test_stats(self):
         for size in SIZES:
             l = LRU(size)
