@@ -228,6 +228,31 @@ class TestLRU(unittest.TestCase):
         l[3] = '3'
         self.assertTrue(val)
 
+    def test_pop(self):
+        l = LRU(2)
+        v = '2' * 4096
+        l[1] = '1'
+        l[2] = v
+        val = l.pop(1)
+        self.assertEqual('1', val)
+        self.assertEqual((1, 0), l.get_stats())
+        val = l.pop(2, 'not used')
+        self.assertEqual(v, val)
+        del val
+        self.assertTrue(v)
+        self.assertEqual((2, 0), l.get_stats())
+        val = l.pop(3, '3' * 4096)
+        self.assertEqual('3' * 4096, val)
+        self.assertEqual((2, 1), l.get_stats())
+        self.assertEqual(0, len(l))
+        with self.assertRaises(KeyError) as ke:
+            l.pop(4)
+            self.assertEqual(4, ke.args[0])
+        self.assertEqual((2, 2), l.get_stats())
+        self.assertEqual(0, len(l))
+        with self.assertRaises(TypeError):
+            l.pop()
+
     def test_stats(self):
         for size in SIZES:
             l = LRU(size)

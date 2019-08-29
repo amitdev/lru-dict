@@ -415,6 +415,41 @@ LRU_setdefault(LRU *self, PyObject *args)
 }
 
 static PyObject *
+LRU_pop(LRU *self, PyObject *args)
+{
+    PyObject *key;
+    PyObject *default_obj = NULL;
+    PyObject *result;
+
+    if (!PyArg_ParseTuple(args, "O|O", &key, &default_obj))
+        return NULL;
+
+    result = lru_subscript(self, key);
+
+    if (result) {
+        /* Save and restore Python error indicator around deleting item --
+         * because between the last call of item getter (lru_subscript) and
+         * next call of item setter (lru_ass_sub), the item may have been
+         * removed from the LRU as the effect of arbitrary action in code
+         * elsewhere, thus incurring an error that will not be cleared by us.
+         */
+
+        /* Question: does this matter in the current implementation? */
+        PyObject *e_type, *e_value, *e_traceback;
+
+        PyErr_Fetch(&e_type, &e_value, &e_traceback);
+        lru_ass_sub(self, key, NULL);
+	PyErr_Restore(e_type, e_value, e_traceback);
+    } else if (default_obj) {
+        PyErr_Clear();
+        Py_INCREF(default_obj);
+        result = default_obj;
+    }
+
+    return result;
+}
+
+static PyObject *
 LRU_peek_first_item(LRU *self)
 {
     if (self->first) {
@@ -561,6 +596,8 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.get(key, instead) -> If L has key return its value, otherwise instead")},
     {"setdefault", (PyCFunction)LRU_setdefault, METH_VARARGS,
                     PyDoc_STR("L.setdefault(key, default=None) -> If L has key return its value, otherwise insert key with a value of default and return default")},
+    {"pop", (PyCFunction)LRU_pop, METH_VARARGS,
+                    PyDoc_STR("L.pop(key[, default]) -> If L has key return its value and remove it from L, otherwise return default. If default is not given and key is not in L, a KeyError is raised.")},
     {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
                     PyDoc_STR("L.set_size() -> set size of LRU")},
     {"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
