@@ -9,6 +9,7 @@ SIZES = [1, 2, 10, 1000]
 # Only available on debug python builds.
 gettotalrefcount = getattr(sys, 'gettotalrefcount', lambda: 0)
 
+
 class TestLRU(unittest.TestCase):
 
     def setUp(self):
@@ -40,33 +41,33 @@ class TestLRU(unittest.TestCase):
             l = LRU(size)
             for i in range(size):
                 l[i] = str(i)
-            self._check_kvi(range(size-1,-1,-1), l)
+            self._check_kvi(range(size - 1, -1, -1), l)
 
     def test_delete_multiple_within_size(self):
         for size in SIZES:
             l = LRU(size)
             for i in range(size):
                 l[i] = str(i)
-            for i in range(0,size,2):
+            for i in range(0, size, 2):
                 del l[i]
-            self._check_kvi(range(size-1,0,-2), l)
-            for i in range(0,size,2):
+            self._check_kvi(range(size - 1, 0, -2), l)
+            for i in range(0, size, 2):
                 with self.assertRaises(KeyError):
                     l[i]
 
     def test_delete_multiple(self):
         for size in SIZES:
             l = LRU(size)
-            n = size*2
+            n = size * 2
             for i in range(n):
                 l[i] = str(i)
-            for i in range(size,n,2):
+            for i in range(size, n, 2):
                 del l[i]
-            self._check_kvi(range(n-1,size,-2), l)
-            for i in range(0,size):
+            self._check_kvi(range(n - 1, size, -2), l)
+            for i in range(0, size):
                 with self.assertRaises(KeyError):
                     l[i]
-            for i in range(size,n,2):
+            for i in range(size, n, 2):
                 with self.assertRaises(KeyError):
                     l[i]
 
@@ -76,7 +77,7 @@ class TestLRU(unittest.TestCase):
             for i in range(size):
                 l[i] = str(i)
             l[size] = str(size)
-            self._check_kvi(range(size,0,-1), l)
+            self._check_kvi(range(size, 0, -1), l)
 
     def test_access_within_size(self):
         for size in SIZES:
@@ -85,7 +86,7 @@ class TestLRU(unittest.TestCase):
                 l[i] = str(i)
             for i in range(size):
                 self.assertEqual(l[i], str(i))
-                self.assertEqual(l.get(i,None), str(i))
+                self.assertEqual(l.get(i, None), str(i))
 
     def test_contains(self):
         for size in SIZES:
@@ -101,11 +102,10 @@ class TestLRU(unittest.TestCase):
             n = size * 2
             for i in range(n):
                 l[i] = str(i)
-            self._check_kvi(range(n-1,size-1,-1), l)
+            self._check_kvi(range(n - 1, size - 1, -1), l)
             for i in range(size, n):
                 self.assertEqual(l[i], str(i))
-                self.assertEqual(l.get(i,None), str(i))
-
+                self.assertEqual(l.get(i, None), str(i))
 
     def test_update(self):
         l = LRU(2)
@@ -119,7 +119,7 @@ class TestLRU(unittest.TestCase):
         self.assertEqual(('b', 3), l.peek_first_item())
         self.assertEqual(l['a'], 2)
         self.assertEqual(l['b'], 3)
-        l.update({'a':1, 'b':2})
+        l.update({'a': 1, 'b': 2})
         self.assertEqual(('b', 2), l.peek_first_item())
         self.assertEqual(l['a'], 1)
         self.assertEqual(l['b'], 2)
@@ -127,7 +127,6 @@ class TestLRU(unittest.TestCase):
         self.assertEqual(('b', 2), l.peek_first_item())
         l.update(a=2)
         self.assertEqual(('a', 2), l.peek_first_item())
-
 
     def test_peek_first_item(self):
         l = LRU(2)
@@ -153,10 +152,10 @@ class TestLRU(unittest.TestCase):
     def test_has_key(self):
         for size in SIZES:
             l = LRU(size)
-            for i in range(2*size):
+            for i in range(2 * size):
                 l[i] = str(i)
                 self.assertTrue(l.has_key(i))
-            for i in range(size, 2*size):
+            for i in range(size, 2 * size):
                 self.assertTrue(l.has_key(i))
             for i in range(size):
                 self.assertFalse(l.has_key(i))
@@ -169,16 +168,16 @@ class TestLRU(unittest.TestCase):
     def test_capacity_set(self):
         for size in SIZES:
             l = LRU(size)
-            for i in range(size+5):
+            for i in range(size + 5):
                 l[i] = str(i)
-            l.set_size(size+10)
-            self.assertTrue(size+10 == l.get_size())
+            l.set_size(size + 10)
+            self.assertTrue(size + 10 == l.get_size())
             self.assertTrue(len(l) == size)
-            for i in range(size+20):
+            for i in range(size + 20):
                 l[i] = str(i)
-            self.assertTrue(len(l) == size+10)
-            l.set_size(size+10-1)
-            self.assertTrue(len(l) == size+10-1)
+            self.assertTrue(len(l) == size + 10)
+            l.set_size(size + 10 - 1)
+            self.assertTrue(len(l) == size + 10 - 1)
 
     def test_unhashable(self):
         l = LRU(1)
@@ -191,13 +190,13 @@ class TestLRU(unittest.TestCase):
     def test_clear(self):
         for size in SIZES:
             l = LRU(size)
-            for i in range(size+5):
+            for i in range(size + 5):
                 l[i] = str(i)
             l.clear()
             for i in range(size):
                 l[i] = str(i)
             for i in range(size):
-                _ = l[random.randint(0, size-1)]
+                _ = l[random.randint(0, size - 1)]
             l.clear()
             self.assertTrue(len(l) == 0)
 
@@ -312,7 +311,6 @@ class TestLRU(unittest.TestCase):
         self.assertEqual(l.keys(), ['b'])
         self.assertEqual(l.values(), [2])
 
-
         l = LRU(1, callback=callback)
         l[first_key] = first_value
 
@@ -333,8 +331,9 @@ class TestLRU(unittest.TestCase):
         self.assertEqual(counter[0], 1)
         self.assertEqual(l.keys(), ['b', 'a'])
         l.set_size(1)
-        self.assertEqual(counter[0], 2) # callback invoked
+        self.assertEqual(counter[0], 2)  # callback invoked
         self.assertEqual(l.keys(), ['b'])
+
 
 if __name__ == '__main__':
     unittest.main()
