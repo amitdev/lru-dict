@@ -409,6 +409,8 @@ LRU_setdefault(LRU *self, PyObject *args)
 
     if (lru_ass_sub(self, key, default_obj) != 0)
         return NULL;
+
+    Py_INCREF(default_obj);
     return default_obj;
 }
 

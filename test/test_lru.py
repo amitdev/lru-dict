@@ -222,6 +222,12 @@ class TestLRU(unittest.TestCase):
         self.assertEqual('2', val)
         self.assertEqual((1, 1), l.get_stats())
         self.assertEqual(val, l[2])
+        l.clear()
+        val = 'long string' * 512
+        l.setdefault(1, val)
+        l[2] = '2'
+        l[3] = '3'
+        self.assertTrue(val)
 
     def test_stats(self):
         for size in SIZES:
