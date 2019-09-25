@@ -424,6 +424,7 @@ LRU_pop(LRU *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|O", &key, &default_obj))
         return NULL;
 
+    /* Trying to access the item by key. */
     result = lru_subscript(self, key);
 
     if (result) {
@@ -441,10 +442,15 @@ LRU_pop(LRU *self, PyObject *args)
         lru_ass_sub(self, key, NULL);
 	PyErr_Restore(e_type, e_value, e_traceback);
     } else if (default_obj) {
+	/* result == NULL, i.e. key missing, and default_obj given */
         PyErr_Clear();
         Py_INCREF(default_obj);
         result = default_obj;
     }
+    /* Otherwise (key missing, and default_obj not given [i.e. == NULL]), the
+     * call to lru_subscript (at the location marked by "Trying to access the
+     * item by key" in the comments) has already generated the appropriate
+     * exception. */
 
     return result;
 }
