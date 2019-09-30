@@ -427,22 +427,11 @@ LRU_pop(LRU *self, PyObject *args)
     /* Trying to access the item by key. */
     result = lru_subscript(self, key);
 
-    if (result) {
-        /* Save and restore Python error indicator around deleting item --
-         * because between the last call of item getter (lru_subscript) and
-         * next call of item setter (lru_ass_sub), the item may have been
-         * removed from the LRU as the effect of arbitrary action in code
-         * elsewhere, thus incurring an error that will not be cleared by us.
-         */
-
-        /* Question: does this matter in the current implementation? */
-        PyObject *e_type, *e_value, *e_traceback;
-
-        PyErr_Fetch(&e_type, &e_value, &e_traceback);
+    if (result)
+        /* result != NULL, delete it from dict by key */
         lru_ass_sub(self, key, NULL);
-	PyErr_Restore(e_type, e_value, e_traceback);
-    } else if (default_obj) {
-	/* result == NULL, i.e. key missing, and default_obj given */
+    else if (default_obj) {
+        /* result == NULL, i.e. key missing, and default_obj given */
         PyErr_Clear();
         Py_INCREF(default_obj);
         result = default_obj;
