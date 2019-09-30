@@ -500,13 +500,7 @@ LRU_popitem(LRU *self, PyObject *args, PyObject *kwds)
         PyErr_SetString(PyExc_KeyError, "popitem(): LRU dict is empty");
         return NULL;
     }
-    {
-        PyObject *e_type, *e_value, *e_traceback;
-
-        PyErr_Fetch(&e_type, &e_value, &e_traceback);
-        lru_ass_sub(self, PyTuple_GET_ITEM(result, 0), NULL);
-        PyErr_Restore(e_type, e_value, e_traceback);
-    }
+    lru_ass_sub(self, PyTuple_GET_ITEM(result, 0), NULL);
     Py_INCREF(result);
     return result;
 }
