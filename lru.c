@@ -473,6 +473,39 @@ LRU_peek_last_item(LRU *self)
 }
 
 static PyObject *
+LRU_popitem(LRU *self, PyObject *args, PyObject *kwds)
+{
+    static char *kwlist[] = {"least_recent", NULL};
+    int pop_least_recent = 1;
+    PyObject *result;
+
+#if PY_MAJOR_VERSION >= 3
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|p", kwlist, &pop_least_recent))
+        return NULL;
+#else
+    {
+        PyObject *arg_ob = Py_True;
+        if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &arg_ob))
+            return NULL;
+        pop_least_recent = PyObject_IsTrue(arg_ob);
+        if (pop_least_recent == -1)
+            return NULL;
+    }
+#endif
+    if (pop_least_recent)
+        result = LRU_peek_last_item(self);
+    else
+        result = LRU_peek_first_item(self);
+    if (result == Py_None) {
+        PyErr_SetString(PyExc_KeyError, "popitem(): LRU dict is empty");
+        return NULL;
+    }
+    lru_ass_sub(self, PyTuple_GET_ITEM(result, 0), NULL);
+    Py_INCREF(result);
+    return result;
+}
+
+static PyObject *
 LRU_keys(LRU *self) {
     return collect(self, get_key);
 }
@@ -593,6 +626,8 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.setdefault(key, default=None) -> If L has key return its value, otherwise insert key with a value of default and return default")},
     {"pop", (PyCFunction)LRU_pop, METH_VARARGS,
                     PyDoc_STR("L.pop(key[, default]) -> If L has key return its value and remove it from L, otherwise return default. If default is not given and key is not in L, a KeyError is raised.")},
+    {"popitem", (PyCFunctionWithKeywords)LRU_popitem, METH_VARARGS | METH_KEYWORDS,
+                    PyDoc_STR("L.popitem([least_recent=True]) -> Returns and removes a (key, value) pair. The pair returned is the least-recently used if least_recent is true, or the most-recently used if false.")},
     {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
                     PyDoc_STR("L.set_size() -> set size of LRU")},
     {"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
