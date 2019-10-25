@@ -415,6 +415,36 @@ LRU_setdefault(LRU *self, PyObject *args)
 }
 
 static PyObject *
+LRU_pop(LRU *self, PyObject *args)
+{
+    PyObject *key;
+    PyObject *default_obj = NULL;
+    PyObject *result;
+
+    if (!PyArg_ParseTuple(args, "O|O", &key, &default_obj))
+        return NULL;
+
+    /* Trying to access the item by key. */
+    result = lru_subscript(self, key);
+
+    if (result)
+        /* result != NULL, delete it from dict by key */
+        lru_ass_sub(self, key, NULL);
+    else if (default_obj) {
+        /* result == NULL, i.e. key missing, and default_obj given */
+        PyErr_Clear();
+        Py_INCREF(default_obj);
+        result = default_obj;
+    }
+    /* Otherwise (key missing, and default_obj not given [i.e. == NULL]), the
+     * call to lru_subscript (at the location marked by "Trying to access the
+     * item by key" in the comments) has already generated the appropriate
+     * exception. */
+
+    return result;
+}
+
+static PyObject *
 LRU_peek_first_item(LRU *self)
 {
     if (self->first) {
@@ -561,6 +591,8 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.get(key, instead) -> If L has key return its value, otherwise instead")},
     {"setdefault", (PyCFunction)LRU_setdefault, METH_VARARGS,
                     PyDoc_STR("L.setdefault(key, default=None) -> If L has key return its value, otherwise insert key with a value of default and return default")},
+    {"pop", (PyCFunction)LRU_pop, METH_VARARGS,
+                    PyDoc_STR("L.pop(key[, default]) -> If L has key return its value and remove it from L, otherwise return default. If default is not given and key is not in L, a KeyError is raised.")},
     {"set_size", (PyCFunction)LRU_set_size, METH_VARARGS,
                     PyDoc_STR("L.set_size() -> set size of LRU")},
     {"get_size", (PyCFunction)LRU_get_size, METH_NOARGS,
