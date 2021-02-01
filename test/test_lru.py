@@ -1,6 +1,7 @@
 import gc
 import random
 import sys
+import threading
 import unittest
 from lru import LRU
 
@@ -373,6 +374,25 @@ class TestLRU(unittest.TestCase):
         l.set_size(1)
         self.assertEqual(counter[0], 2)  # callback invoked
         self.assertEqual(l.keys(), ['b'])
+
+    def test_callback_thread(self):
+        # see discussion: https://github.com/amitdev/lru-dict/issues/22
+        def callback(key, value):
+            with value:         # Python threading will drop GIL
+                pass
+
+        l = LRU(5, callback)
+
+        def run():
+            for i in range(100000):
+                l[i] = threading.Lock()
+
+        t1 = threading.Thread(target=run)
+        t2 = threading.Thread(target=run)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
 
 
 if __name__ == '__main__':

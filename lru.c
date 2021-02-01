@@ -1,4 +1,10 @@
 #include <Python.h>
+#include <structmember.h>
+
+#ifdef WITH_THREAD
+#include <pythread.h>
+#endif
+
 
 /*
  * This is a simple implementation of LRU Dict that uses a Python dict and an associated doubly linked
@@ -128,7 +134,43 @@ typedef struct {
     Py_ssize_t hits;
     Py_ssize_t misses;
     PyObject *callback;
+#ifdef WITH_THREAD
+    PyThread_type_lock lock;
+#endif
 } LRU;
+
+
+#ifdef WITH_THREAD
+static void
+lru_acquire_lock(LRU *self)
+{
+    if (self && self->lock) {
+	if (! PyThread_acquire_lock(self->lock, NOWAIT_LOCK)) {
+	    Py_BEGIN_ALLOW_THREADS
+	    PyThread_acquire_lock(self->lock, WAIT_LOCK);
+	    Py_END_ALLOW_THREADS
+	}
+    }
+}
+
+
+static void
+lru_release_lock(LRU *self)
+{
+    if (self && self->lock) {
+	PyThread_release_lock(self->lock);
+    }
+}
+#else
+static void
+lru_acquire_lock(LRU *self)
+{ }
+
+
+static void
+lru_release_lock(LRU *self)
+{ }
+#endif
 
 
 static PyObject *
@@ -193,21 +235,40 @@ lru_delete_last(LRU *self)
 {
     PyObject *arglist;
     PyObject *result;
-    Node* n = self->last;
 
     if (!self->last)
         return;
 
     if (self->callback) {
-        
+	/* If a callback is set, guard the acquisition and manipulation of
+	 * resources using the lock while the callback is in action.
+	 *
+	 * Although Python normally ensures that a call into the extension code
+	 * itself is protected by the GIL, after control is yielded to the
+	 * callback the GIL may be released. This lock syncs accesses to self
+	 * around the callback as a precaution against that. */
+#ifdef WITH_THREAD
+	lru_acquire_lock(self);
+#endif
+	Node* n = self->last;
         arglist = Py_BuildValue("OO", n->key, n->value);
         result = PyObject_CallObject(self->callback, arglist);
         Py_XDECREF(result);
         Py_DECREF(arglist);
-    }
 
-    lru_remove_node(self, n);
-    PUT_NODE(self->dict, n->key, NULL);
+	lru_remove_node(self, n);
+	PUT_NODE(self->dict, n->key, NULL);
+
+#ifdef WITH_THREAD
+	lru_release_lock(self);
+#endif
+    } else {
+	/* If the callback mechanism is not in place, do not use the extra
+	 * self lock. */
+	Node* n = self->last;
+	lru_remove_node(self, n);
+	PUT_NODE(self->dict, n->key, NULL);
+    }
 }
 
 static Py_ssize_t
@@ -680,6 +741,13 @@ LRU_init(LRU *self, PyObject *args, PyObject *kwds)
     self->first = self->last = NULL;
     self->hits = 0;
     self->misses = 0;
+#ifdef WITH_THREAD
+    self->lock = PyThread_allocate_lock();
+    if (self->lock == NULL) {
+	PyErr_SetString(PyExc_MemoryError, "Lock allocation failure");
+	return -1;
+    }
+#endif
     return 0;
 }
 
@@ -691,6 +759,12 @@ LRU_dealloc(LRU *self)
         Py_DECREF(self->dict);
         Py_XDECREF(self->callback);
     }
+#ifdef WITH_THREAD
+    if (self->lock) {
+	PyThread_free_lock(self->lock);
+	self->lock = NULL;
+    }
+#endif
     PyObject_Del((PyObject*)self);
 }
 
