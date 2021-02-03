@@ -268,6 +268,17 @@ class TestLRU(unittest.TestCase):
             self.assertEqual('popitem(): LRU dict is empty', ke.args[0])
         self.assertEqual((0, 0), l.get_stats())
 
+    def test_popitem_refcount(self):
+        l = LRU(1)
+        value = "A Pythong string"
+        rc_before = sys.getrefcount(value)
+        l[0] = value
+        rc_after_insertion = sys.getrefcount(value)
+        l.popitem()
+        rc_after_popitem = sys.getrefcount(value)
+        self.assertGreater(rc_after_insertion, rc_before)
+        self.assertEqual(rc_after_popitem, rc_before)
+
     def test_stats(self):
         for size in SIZES:
             l = LRU(size)
