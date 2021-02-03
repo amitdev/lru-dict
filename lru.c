@@ -157,8 +157,14 @@ typedef struct {
 static void
 lru_acquire_lock(LRU *self)
 {
+    PyLockStatus status;
+
     if (self && self->lock) {
-	PyThread_acquire_lock(self->lock, WAIT_LOCK);
+	status = PyThread_acquire_lock(self->lock, WAIT_LOCK);
+	if (status == PY_LOCK_FAILURE) {
+	    PyErr_SetString(PyExc_RuntimeError, "unable to wait on lock");
+	    return;
+	}
     }
 }
 
