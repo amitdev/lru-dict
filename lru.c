@@ -1,5 +1,9 @@
 #include <Python.h>
 
+#ifdef WITH_THREAD
+#include <pythread.h>
+#endif
+
 /*
  * This is a simple implementation of LRU Dict that uses a Python dict and an associated doubly linked
  * list to keep track of recently inserted/accessed items.
@@ -29,6 +33,20 @@
  *  The invariant is to maintain the list to reflect the LRU order of items in the dict.
  *  self->first will point to the MRU item and self-last to LRU item. Size of list will not
  *  grow beyond size of LRU dict.
+ *
+ *  NOTE: The LRU's mutable internal data are protected by a Python lock
+ *  (mutex) that blocks. Currently all reading and writing are locked by the
+ *  same mutex. The methods exposed to Python, which by convention starts with
+ *  the capital letters "LRU_*", should make sure that access to critical
+ *  section are protected.  The callback, in constrast, should NOT execute in
+ *  the critical section, but the dirty staging area.
+ *
+ *  In an "LRU_*" method, care must be taken to avoid deadlock. In particular,
+ *  do not call another capital-LRU method in the critical section (which
+ *  almost always deadlocks).
+ *
+ *  The small-letter "lru_*" functions are not meant to be exposed Python. They
+ *  should never grab the lock.
  *
  */
 
@@ -128,7 +146,40 @@ typedef struct {
     Py_ssize_t hits;
     Py_ssize_t misses;
     PyObject *callback;
+    PyObject *staging_list;
+#ifdef WITH_THREAD
+    PyThread_type_lock lock;
+#endif
 } LRU;
+
+
+#ifdef WITH_THREAD
+static void
+lru_acquire_lock(LRU *self)
+{
+    if (self && self->lock) {
+	PyThread_acquire_lock(self->lock, WAIT_LOCK);
+    }
+}
+
+
+static void
+lru_release_lock(LRU *self)
+{
+    if (self && self->lock) {
+	PyThread_release_lock(self->lock);
+    }
+}
+#else	/* WITH_THREAD */
+static void
+lru_acquire_lock(LRU *self)
+{ }
+
+
+static void
+lru_release_lock(LRU *self)
+{ }
+#endif	/* WITH_THREAD */
 
 
 static PyObject *
@@ -191,24 +242,83 @@ lru_add_node_at_head(LRU *self, Node* node)
 static void
 lru_delete_last(LRU *self)
 {
-    PyObject *arglist;
-    PyObject *result;
     Node* n = self->last;
-
-    if (!self->last)
+    if (n == NULL)
         return;
 
+    /* Transfer the key and value to staging. */
     if (self->callback) {
-        
-        arglist = Py_BuildValue("OO", n->key, n->value);
-        result = PyObject_CallObject(self->callback, arglist);
-        Py_XDECREF(result);
-        Py_DECREF(arglist);
+	PyObject *discarded_tuple;
+        discarded_tuple = Py_BuildValue("OO", n->key, n->value);
+	if (self->staging_list) {
+	    if (discarded_tuple)
+		PyList_Append(self->staging_list, discarded_tuple);
+	} else {
+	    /* Somehow the staging list is not there. */
+	    Py_XDECREF(discarded_tuple);
+	}
     }
 
     lru_remove_node(self, n);
     PUT_NODE(self->dict, n->key, NULL);
 }
+
+
+static void
+lru_purge_staging(LRU *self)
+{
+    /* Purging mechanism.
+     *
+     * NOTE: This is _the_ place where callback gets called. The function is
+     * intended to be always called _outside_ the critical section (the LRU
+     * internal bookkeeping data protected by LRU.lock). The reason is that we
+     * cannot guarantee the callback function, which can do anything, will play
+     * nice with the lock. If the callback were executed within the critical
+     * section, it may as well deadlock (e.g. when the callback inserts objects
+     * into the LRU itself, triggering more evictions and hence the callback
+     * calls, which deadlocks).
+     *
+     * The staging area is just a Python list, and if a callback is set, it is
+     * popped from the tail and each element is fed to the callback. Otherwise,
+     * the contents are wiped.
+     *
+     * The purging/callback mechanism is dirty, and there's no guarantee that
+     * the callback will be called in any order, or if at all, for a particular
+     * item. */
+    if (self->staging_list) {
+	PyGILState_STATE gstate;
+	gstate = PyGILState_Ensure();
+
+	Py_ssize_t len = PySequence_Size(self->staging_list);
+
+	if (self->callback == NULL) {
+	    PySequence_DelSlice(self->staging_list, 0, len);
+	} else {
+	    Py_ssize_t i;
+	    for (i = len - 1; i >= 0; i--) {
+		PyObject *args;
+
+		args = PySequence_GetItem(self->staging_list, i);
+
+		if (args) {
+		    PyObject *result;
+		    result = PyObject_CallObject(self->callback, args);
+		    Py_XDECREF(result);
+		} else {
+		    PyErr_Clear();
+		}
+
+		Py_XDECREF(args);
+
+		if (PySequence_DelItem(self->staging_list, i) == -1) {
+		    PyErr_Clear();
+		}
+	    }
+	}
+	PyGILState_Release(gstate);
+    }
+}
+
 
 static Py_ssize_t
 lru_length(LRU *self)
@@ -216,15 +326,40 @@ lru_length(LRU *self)
     return PyDict_Size(self->dict);
 }
 
+
+static Py_ssize_t
+LRU_length_lock(LRU *self)
+{
+    Py_ssize_t len;
+
+    lru_acquire_lock(self);
+
+    len = lru_length(self);
+
+    lru_release_lock(self);
+
+    return len;
+}
+
+
 static PyObject *
 LRU_contains_key(LRU *self, PyObject *key)
 {
-    if (PyDict_Contains(self->dict, key)) {
+    int flag;
+
+    lru_acquire_lock(self);
+
+    flag = PyDict_Contains(self->dict, key);
+
+    lru_release_lock(self);
+
+    if (flag) {
         Py_RETURN_TRUE;
     } else {
         Py_RETURN_FALSE;
     }
 }
+
 
 static PyObject *
 LRU_contains(LRU *self, PyObject *args)
@@ -232,13 +367,22 @@ LRU_contains(LRU *self, PyObject *args)
     PyObject *key;
     if (!PyArg_ParseTuple(args, "O", &key))
         return NULL;
+    /* NOTE: LRU_contains_key() locks. */
     return LRU_contains_key(self, key);
 }
 
 static int
 LRU_seq_contains(LRU *self, PyObject *key)
 {
-    return PyDict_Contains(self->dict, key);
+    int res;
+
+    lru_acquire_lock(self);
+
+    res = PyDict_Contains(self->dict, key);
+
+    lru_release_lock(self);
+
+    return res;
 }
 
 static PyObject *
@@ -264,6 +408,22 @@ lru_subscript(LRU *self, register PyObject *key)
     return node->value;
 }
 
+
+static PyObject *
+LRU_subscript_lock(LRU *self, register PyObject *key)
+{
+    PyObject *result;
+
+    lru_acquire_lock(self);
+
+    result = lru_subscript(self, key);
+
+    lru_release_lock(self);
+
+    return result;
+}
+
+
 static PyObject *
 LRU_get(LRU *self, PyObject *args)
 {
@@ -274,8 +434,13 @@ LRU_get(LRU *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|O", &key, &instead))
         return NULL;
 
+    lru_acquire_lock(self);
+
     result = lru_subscript(self, key);
     PyErr_Clear();  /* GET_NODE sets an exception on miss. Shut it up. */
+
+    lru_release_lock(self);
+
     if (result)
         return result;
 
@@ -334,10 +499,27 @@ lru_ass_sub(LRU *self, PyObject *key, PyObject *value)
     return res;
 }
 
+
+static int
+LRU_ass_sub_lock_purge(LRU *self, PyObject *key, PyObject *value)
+{
+    int res;
+
+    lru_acquire_lock(self);
+
+    res = lru_ass_sub(self, key, value);
+
+    lru_release_lock(self);
+    lru_purge_staging(self);
+
+    return res;
+}
+
+
 static PyMappingMethods LRU_as_mapping = {
-    (lenfunc)lru_length,        /*mp_length*/
-    (binaryfunc)lru_subscript,  /*mp_subscript*/
-    (objobjargproc)lru_ass_sub, /*mp_ass_subscript*/
+    (lenfunc)LRU_length_lock,			/*mp_length*/
+    (binaryfunc)LRU_subscript_lock,		/*mp_subscript*/
+    (objobjargproc)LRU_ass_sub_lock_purge,	/*mp_ass_subscript*/
 };
 
 static PyObject *
@@ -376,14 +558,26 @@ LRU_update(LRU *self, PyObject *args, PyObject *kwargs)
 
 	if ((PyArg_ParseTuple(args, "|O", &arg))) {
 		if (arg && PyDict_Check(arg)) {
-			while (PyDict_Next(arg, &pos, &key, &value))
-				lru_ass_sub(self, key, value);
+
+		    lru_acquire_lock(self);
+
+		    while (PyDict_Next(arg, &pos, &key, &value))
+			lru_ass_sub(self, key, value);
+
+		    lru_release_lock(self);
+		    lru_purge_staging(self);
 		}
 	}
 	
 	if (kwargs != NULL && PyDict_Check(kwargs)) {
-		while (PyDict_Next(kwargs, &pos, &key, &value))
-			lru_ass_sub(self, key, value);
+
+	    lru_acquire_lock(self);
+
+	    while (PyDict_Next(kwargs, &pos, &key, &value))
+		lru_ass_sub(self, key, value);
+
+	    lru_release_lock(self);
+	    lru_purge_staging(self);
 	}
 
 	Py_RETURN_NONE;
@@ -395,19 +589,30 @@ LRU_setdefault(LRU *self, PyObject *args)
     PyObject *key;
     PyObject *default_obj = NULL;
     PyObject *result;
+    int status;
 
     if (!PyArg_ParseTuple(args, "O|O", &key, &default_obj))
         return NULL;
 
-    result = lru_subscript(self, key);
-    PyErr_Clear();
-    if (result)
-        return result;
+    lru_acquire_lock(self);
 
+    result = lru_subscript(self, key);
+
+    if (result) {
+	lru_release_lock(self);
+        return result;
+    }
+
+    PyErr_Clear();
     if (!default_obj)
         default_obj = Py_None;
 
-    if (lru_ass_sub(self, key, default_obj) != 0)
+    status = lru_ass_sub(self, key, default_obj);
+
+    lru_release_lock(self);
+    lru_purge_staging(self);
+
+    if (status != 0)
         return NULL;
 
     Py_INCREF(default_obj);
@@ -424,6 +629,7 @@ LRU_pop(LRU *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O|O", &key, &default_obj))
         return NULL;
 
+    lru_acquire_lock(self);
     /* Trying to access the item by key. */
     result = lru_subscript(self, key);
 
@@ -440,36 +646,62 @@ LRU_pop(LRU *self, PyObject *args)
      * call to lru_subscript (at the location marked by "Trying to access the
      * item by key" in the comments) has already generated the appropriate
      * exception. */
+    lru_release_lock(self);
+    /* the pop() method never increases the cache size, and purging is not
+     * necessary even in the case of eager purging. */
+
+    return result;
+}
+
+
+static PyObject *
+get_item(Node *node)
+{
+    PyObject *tuple = PyTuple_New(2);
+    Py_INCREF(node->key);
+    PyTuple_SET_ITEM(tuple, 0, node->key);
+    Py_INCREF(node->value);
+    PyTuple_SET_ITEM(tuple, 1, node->value);
+    return tuple;
+}
+
+
+static PyObject *
+LRU_peek_first_item(LRU *self)
+{
+    PyObject *result;
+
+    lru_acquire_lock(self);
+
+    if (self->first) {
+	result = get_item(self->first);	/* New reference */
+    } else {
+	result = Py_None;
+	Py_INCREF(result);
+    }
+
+    lru_release_lock(self);
 
     return result;
 }
 
 static PyObject *
-LRU_peek_first_item(LRU *self)
-{
-    if (self->first) {
-        PyObject *tuple = PyTuple_New(2);
-        Py_INCREF(self->first->key);
-        PyTuple_SET_ITEM(tuple, 0, self->first->key);
-        Py_INCREF(self->first->value);
-        PyTuple_SET_ITEM(tuple, 1, self->first->value);
-        return tuple;
-    }
-    else Py_RETURN_NONE;
-}
-
-static PyObject *
 LRU_peek_last_item(LRU *self)
 {
+    PyObject *result;
+
+    lru_acquire_lock(self);
+
     if (self->last) {
-        PyObject *tuple = PyTuple_New(2);
-        Py_INCREF(self->last->key);
-        PyTuple_SET_ITEM(tuple, 0, self->last->key);
-        Py_INCREF(self->last->value);
-        PyTuple_SET_ITEM(tuple, 1, self->last->value);
-        return tuple;
+        result = get_item(self->last);	/* New reference */
+    } else {
+	result = Py_None;
+	Py_INCREF(result);
     }
-    else Py_RETURN_NONE;
+
+    lru_release_lock(self);
+
+    return result;
 }
 
 static PyObject *
@@ -477,7 +709,8 @@ LRU_popitem(LRU *self, PyObject *args, PyObject *kwds)
 {
     static char *kwlist[] = {"least_recent", NULL};
     int pop_least_recent = 1;
-    PyObject *result;
+    PyObject *item_to_pop;	/* Python tuple of (key, value) */
+    Node *node;
 
 #if PY_MAJOR_VERSION >= 3
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|p", kwlist, &pop_least_recent))
@@ -492,22 +725,33 @@ LRU_popitem(LRU *self, PyObject *args, PyObject *kwds)
             return NULL;
     }
 #endif
-    if (pop_least_recent)
-        result = LRU_peek_last_item(self);
-    else
-        result = LRU_peek_first_item(self);
-    if (result == Py_None) {
+    lru_acquire_lock(self);
+
+    node = pop_least_recent ? self->last : self->first;
+    /* item_to_pop is new reference if not NULL */
+    item_to_pop = node ? get_item(node) : NULL;
+    if (item_to_pop == NULL) {
         PyErr_SetString(PyExc_KeyError, "popitem(): LRU dict is empty");
+	lru_release_lock(self);
         return NULL;
     }
-    lru_ass_sub(self, PyTuple_GET_ITEM(result, 0), NULL);
-    Py_INCREF(result);
-    return result;
+    lru_ass_sub(self, PyTuple_GET_ITEM(item_to_pop, 0), NULL);
+
+    lru_release_lock(self);
+
+    return item_to_pop;
 }
 
 static PyObject *
 LRU_keys(LRU *self) {
-    return collect(self, get_key);
+    PyObject * result;
+
+    lru_acquire_lock(self);
+
+    result = collect(self, get_key);
+
+    lru_release_lock(self);
+    return result;
 }
 
 static PyObject *
@@ -520,36 +764,52 @@ get_value(Node *node)
 static PyObject *
 LRU_values(LRU *self)
 {
-    return collect(self, get_value);
+    PyObject * result;
+
+    lru_acquire_lock(self);
+
+    result = collect(self, get_value);
+
+    lru_release_lock(self);
+
+    return result;
 }
 
 static PyObject *
 LRU_set_callback(LRU *self, PyObject *args)
 {
-    return set_callback(self, args);
+    PyObject *result;
+
+    lru_acquire_lock(self);
+
+    result = set_callback(self, args);
+
+    lru_release_lock(self);
+
+    return result;
 }
 
-static PyObject *
-get_item(Node *node)
-{
-    PyObject *tuple = PyTuple_New(2);
-    Py_INCREF(node->key);
-    PyTuple_SET_ITEM(tuple, 0, node->key);
-    Py_INCREF(node->value);
-    PyTuple_SET_ITEM(tuple, 1, node->value);
-    return tuple;
-}
 
 static PyObject *
 LRU_items(LRU *self)
 {
-    return collect(self, get_item);
+    PyObject * result;
+
+    lru_acquire_lock(self);
+
+    result = collect(self, get_item);
+
+    lru_release_lock(self);
+
+    return result;
 }
 
 static PyObject *
 LRU_set_size(LRU *self, PyObject *args, PyObject *kwds)
 {
     Py_ssize_t newSize;
+    int should_purge;
+
     if (!PyArg_ParseTuple(args, "n", &newSize)) {
         return NULL;
     }
@@ -557,18 +817,30 @@ LRU_set_size(LRU *self, PyObject *args, PyObject *kwds)
         PyErr_SetString(PyExc_ValueError, "Size should be a positive number");
         return NULL;
     }
+
+    lru_acquire_lock(self);
+
+    should_purge = lru_length(self) > newSize ? 1 : 0;
     while (lru_length(self) > newSize) {
         lru_delete_last(self);
     }
     self->size = newSize;
+
+    lru_release_lock(self);
+    if (should_purge)
+	lru_purge_staging(self);
+
     Py_RETURN_NONE;
 }
 
 static PyObject *
 LRU_clear(LRU *self)
 {
-    Node *c = self->first;
+    Node *c;
 
+    lru_acquire_lock(self);
+
+    c = self->first;
     while (c) {
         Node* n = c;
         c = c->next;
@@ -578,6 +850,10 @@ LRU_clear(LRU *self)
 
     self->hits = 0;
     self->misses = 0;
+
+    lru_release_lock(self);
+    lru_purge_staging(self);
+
     Py_RETURN_NONE;
 }
 
@@ -585,13 +861,29 @@ LRU_clear(LRU *self)
 static PyObject *
 LRU_get_size(LRU *self)
 {
-    return Py_BuildValue("i", self->size);
+    PyObject *res;
+
+    lru_acquire_lock(self);
+
+    res = Py_BuildValue("i", self->size);
+
+    lru_release_lock(self);
+
+    return res;
 }
 
 static PyObject *
 LRU_get_stats(LRU *self)
 {
-    return Py_BuildValue("nn", self->hits, self->misses);
+    PyObject *res;
+
+    lru_acquire_lock(self);
+
+    res = Py_BuildValue("nn", self->hits, self->misses);
+
+    lru_release_lock(self);
+
+    return res;
 }
 
 
@@ -680,6 +972,13 @@ LRU_init(LRU *self, PyObject *args, PyObject *kwds)
     self->first = self->last = NULL;
     self->hits = 0;
     self->misses = 0;
+#ifdef WITH_THREAD
+    if ( (self->lock = PyThread_allocate_lock()) == NULL ) {
+	PyErr_SetString(PyExc_MemoryError, "Lock allocation failure");
+	return -1;
+    }
+#endif
+    self->staging_list = PyList_New(0);
     return 0;
 }
 
@@ -687,10 +986,17 @@ static void
 LRU_dealloc(LRU *self)
 {
     if (self->dict) {
-        LRU_clear(self);
+        LRU_clear(self);	/* Will call callback on any staging elems. */
         Py_DECREF(self->dict);
-        Py_XDECREF(self->callback);
     }
+    Py_XDECREF(self->staging_list);
+    Py_XDECREF(self->callback);
+#ifdef WITH_THREAD
+    if (self->lock) {
+	PyThread_free_lock(self->lock);
+	self->lock = NULL;
+    }
+#endif
     PyObject_Del((PyObject*)self);
 }
 
