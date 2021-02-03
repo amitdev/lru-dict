@@ -501,7 +501,6 @@ LRU_popitem(LRU *self, PyObject *args, PyObject *kwds)
         return NULL;
     }
     lru_ass_sub(self, PyTuple_GET_ITEM(result, 0), NULL);
-    Py_INCREF(result);
     return result;
 }
 
