@@ -154,6 +154,15 @@ typedef struct {
 
 
 #ifdef WITH_THREAD
+
+#if PY_MAJOR_VERSION < 3
+typedef enum PyLockStatus {
+    PY_LOCK_FAILURE = 0,
+    PY_LOCK_ACQUIRED = 1,
+    PY_LOCK_INTR
+} PyLockStatus;
+#endif	/* Python 2.7 compatibility */
+
 static void
 lru_acquire_lock(LRU *self)
 {
