@@ -773,7 +773,6 @@ LRU_clear(LRU *self)
     self->misses = 0;
 
     LRU_LEAVE_CRITICAL;
-    lru_purge_staging(self);
 
     Py_RETURN_NONE;
 }
@@ -898,12 +897,17 @@ static void
 LRU_dealloc(LRU *self)
 {
     if (self->dict) {
-        LRU_clear(self);	/* Will call callback on any staging elems. */
+        LRU_clear(self);  /* Will NOT call callback on any staging elems. */
         Py_DECREF(self->dict);
     }
-    Py_XDECREF(self->staging_list);
+    /* Dispose of reference to callback */
     Py_XDECREF(self->callback);
-    PyObject_Del((PyObject*)self);
+    self->callback = NULL;
+    /* Set purge flag, trigger no-callback purge (decref all list elements) */
+    self->purge_flag = 1;
+    lru_purge_staging(self);
+    Py_XDECREF(self->staging_list);
+    PyObject_Del((PyObject *)self);
 }
 
 PyDoc_STRVAR(lru_doc,
