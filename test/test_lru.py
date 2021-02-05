@@ -268,6 +268,17 @@ class TestLRU(unittest.TestCase):
             self.assertEqual('popitem(): LRU dict is empty', ke.args[0])
         self.assertEqual((0, 0), l.get_stats())
 
+    def test_popitem_refcount(self):
+        l = LRU(1)
+        value = "A Pythong string"
+        rc_before = sys.getrefcount(value)
+        l[0] = value
+        rc_after_insertion = sys.getrefcount(value)
+        l.popitem()
+        rc_after_popitem = sys.getrefcount(value)
+        self.assertGreater(rc_after_insertion, rc_before)
+        self.assertEqual(rc_after_popitem, rc_before)
+
     def test_stats(self):
         for size in SIZES:
             l = LRU(size)
@@ -373,6 +384,29 @@ class TestLRU(unittest.TestCase):
         l.set_size(1)
         self.assertEqual(counter[0], 2)  # callback invoked
         self.assertEqual(l.keys(), ['b'])
+
+    def test_threads_callback_lock(self):
+        # see: https://github.com/rotki/rotki/pull/2132#issuecomment-765408001
+        import threading
+
+        def callback(key, value):
+            with value:
+                pass
+
+        l = LRU(5, callback)
+
+        def run():
+            for i in range(10000):
+                l[i] = threading.Lock()
+                self.assertLessEqual(len(l), 5)
+
+        threads_coll = [threading.Thread(target=run) for i in range(10)]
+        for th in threads_coll:
+            th.start()
+        for th in threads_coll:
+            th.join()
+        self.assertEqual(len(l), 5)
+        l.clear()
 
 
 if __name__ == '__main__':
