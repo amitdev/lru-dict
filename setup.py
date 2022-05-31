@@ -24,4 +24,7 @@ setup (name = 'lru-dict',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Software Development :: Libraries :: Python Modules',
         ],
+        extras_require={
+            'test': ['pytest'],
+        },
 )
