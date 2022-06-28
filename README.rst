@@ -4,6 +4,9 @@
 .. image:: https://github.com/amitdev/lru-dict/actions/workflows/tests.yml/badge.svg
     :target: https://github.com/amitdev/lru-dict/actions/workflows/tests.yml
 
+.. image:: https://github.com/amitdev/lru-dict/actions/workflows/build-and-deploy.yml/badge.svg
+    :target: https://github.com/amitdev/lru-dict/actions/workflows/build-and-deploy.yml
+
 LRU Dict
 ========
 
