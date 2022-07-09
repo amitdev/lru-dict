@@ -4,7 +4,7 @@ module1 = Extension('lru',
                     sources = ['lru.c'])
 
 setup (name = 'lru-dict',
-       version = '1.1.7',
+       version = '1.1.8',
        description = 'An Dict like LRU container.',
        long_description = open('README.rst').read(),
        long_description_content_type="text/x-rst",
