@@ -1,6 +1,3 @@
-.. image:: https://travis-ci.com/amitdev/lru-dict.svg?branch=master
-    :target: https://travis-ci.com/amitdev/lru-dict
-
 .. image:: https://github.com/amitdev/lru-dict/actions/workflows/tests.yml/badge.svg
     :target: https://github.com/amitdev/lru-dict/actions/workflows/tests.yml
 
