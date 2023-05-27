@@ -1,7 +1,7 @@
 from setuptools import setup, Extension
 
 extensions = [
-    Extension("lru", ["src/lru.c"]),
+    Extension("lru._lru", ["src/lru/_lru.c"]),
 ]
 
 args = {

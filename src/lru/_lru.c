@@ -80,7 +80,7 @@ node_repr(Node* self)
 
 static PyTypeObject NodeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "lru.Node",              /* tp_name */
+    "_lru.Node",              /* tp_name */
     sizeof(Node),            /* tp_basicsize */
     0,                       /* tp_itemsize */
     (destructor)node_dealloc,/* tp_dealloc */
@@ -711,7 +711,7 @@ PyDoc_STRVAR(lru_doc,
 
 static PyTypeObject LRUType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "lru.LRU",               /* tp_name */
+    "_lru.LRU",               /* tp_name */
     sizeof(LRU),             /* tp_basicsize */
     0,                       /* tp_itemsize */
     (destructor)LRU_dealloc, /* tp_dealloc */
