@@ -753,7 +753,7 @@ static PyTypeObject LRUType = {
 #if PY_MAJOR_VERSION >= 3
   static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    "lru",            /* m_name */
+    "_lru",            /* m_name */
     lru_doc,          /* m_doc */
     -1,               /* m_size */
     NULL,             /* m_methods */
@@ -780,7 +780,7 @@ moduleinit(void)
     #if PY_MAJOR_VERSION >= 3
         m = PyModule_Create(&moduledef);
     #else
-        m = Py_InitModule3("lru", NULL, lru_doc);
+        m = Py_InitModule3("_lru", NULL, lru_doc);
     #endif
 
     if (m == NULL)
