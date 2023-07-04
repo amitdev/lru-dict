@@ -199,7 +199,7 @@ lru_delete_last(LRU *self)
         return;
 
     if (self->callback) {
-        
+
         arglist = Py_BuildValue("OO", n->key, n->value);
         result = PyObject_CallObject(self->callback, arglist);
         Py_XDECREF(result);
@@ -265,13 +265,14 @@ lru_subscript(LRU *self, register PyObject *key)
 }
 
 static PyObject *
-LRU_get(LRU *self, PyObject *args)
+LRU_get(LRU *self, PyObject *args, PyObject *keywds)
 {
     PyObject *key;
-    PyObject *instead = NULL;
+    PyObject *default_obj = NULL;
     PyObject *result;
 
-    if (!PyArg_ParseTuple(args, "O|O", &key, &instead))
+    static char *kwlist[] = {"key", "default", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O|O", kwlist, &key, &default_obj))
         return NULL;
 
     result = lru_subscript(self, key);
@@ -279,12 +280,12 @@ LRU_get(LRU *self, PyObject *args)
     if (result)
         return result;
 
-    if (!instead) {
+    if (!default_obj) {
         Py_RETURN_NONE;
     }
 
-    Py_INCREF(instead);
-    return instead;
+    Py_INCREF(default_obj);
+    return default_obj;
 }
 
 static int
@@ -380,7 +381,7 @@ LRU_update(LRU *self, PyObject *args, PyObject *kwargs)
 				lru_ass_sub(self, key, value);
 		}
 	}
-	
+
 	if (kwargs != NULL && PyDict_Check(kwargs)) {
 		while (PyDict_Next(kwargs, &pos, &key, &value))
 			lru_ass_sub(self, key, value);
@@ -415,13 +416,14 @@ LRU_setdefault(LRU *self, PyObject *args)
 }
 
 static PyObject *
-LRU_pop(LRU *self, PyObject *args)
+LRU_pop(LRU *self, PyObject *args, PyObject *keywds)
 {
     PyObject *key;
     PyObject *default_obj = NULL;
     PyObject *result;
 
-    if (!PyArg_ParseTuple(args, "O|O", &key, &default_obj))
+    static char *kwlist[] = {"key", "default", NULL};
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "O|O", kwlist, &key, &default_obj))
         return NULL;
 
     /* Trying to access the item by key. */
@@ -620,11 +622,11 @@ static PyMethodDef LRU_methods[] = {
                     PyDoc_STR("L.items() -> list of L's items (key,value) in MRU order")},
     {"has_key",	(PyCFunction)LRU_contains, METH_VARARGS,
                     PyDoc_STR("L.has_key(key) -> Check if key is there in L")},
-    {"get",	(PyCFunction)LRU_get, METH_VARARGS,
-                    PyDoc_STR("L.get(key, instead) -> If L has key return its value, otherwise instead")},
+    {"get",	(PyCFunction)LRU_get, METH_VARARGS | METH_KEYWORDS,
+                    PyDoc_STR("L.get(key, default=None) -> If L has key return its value, otherwise default")},
     {"setdefault", (PyCFunction)LRU_setdefault, METH_VARARGS,
                     PyDoc_STR("L.setdefault(key, default=None) -> If L has key return its value, otherwise insert key with a value of default and return default")},
-    {"pop", (PyCFunction)LRU_pop, METH_VARARGS,
+    {"pop", (PyCFunction)LRU_pop, METH_VARARGS | METH_KEYWORDS,
                     PyDoc_STR("L.pop(key[, default]) -> If L has key return its value and remove it from L, otherwise return default. If default is not given and key is not in L, a KeyError is raised.")},
     {"popitem", (PyCFunction)LRU_popitem, METH_VARARGS | METH_KEYWORDS,
                     PyDoc_STR("L.popitem([least_recent=True]) -> Returns and removes a (key, value) pair. The pair returned is the least-recently used if least_recent is true, or the most-recently used if false.")},
