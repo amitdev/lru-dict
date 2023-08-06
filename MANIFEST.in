@@ -1,4 +1,1 @@
 include LICENSE README.rst MANIFEST MANIFEST.in
-graft src
-global-exclude *.pyc
-global-exclude *.cache
