@@ -80,7 +80,7 @@ node_repr(Node* self)
 
 static PyTypeObject NodeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_lru.Node",              /* tp_name */
+    "lru.Node",              /* tp_name */
     sizeof(Node),            /* tp_basicsize */
     0,                       /* tp_itemsize */
     (destructor)node_dealloc,/* tp_dealloc */
@@ -711,7 +711,7 @@ PyDoc_STRVAR(lru_doc,
 
 static PyTypeObject LRUType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_lru.LRU",               /* tp_name */
+    "lru.LRU",               /* tp_name */
     sizeof(LRU),             /* tp_basicsize */
     0,                       /* tp_itemsize */
     (destructor)LRU_dealloc, /* tp_dealloc */
@@ -753,7 +753,7 @@ static PyTypeObject LRUType = {
 #if PY_MAJOR_VERSION >= 3
   static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    "_lru",            /* m_name */
+    "lru",            /* m_name */
     lru_doc,          /* m_doc */
     -1,               /* m_size */
     NULL,             /* m_methods */
@@ -780,7 +780,7 @@ moduleinit(void)
     #if PY_MAJOR_VERSION >= 3
         m = PyModule_Create(&moduledef);
     #else
-        m = Py_InitModule3("_lru", NULL, lru_doc);
+        m = Py_InitModule3("lru", NULL, lru_doc);
     #endif
 
     if (m == NULL)

@@ -247,11 +247,11 @@ class TestLRU(unittest.TestCase):
         self.assertEqual(0, len(l))
         with self.assertRaises(KeyError) as ke:
             l.pop(4)
-            self.assertEqual(4, ke.args[0])  # type: ignore
+            self.assertEqual(4, ke.args[0])
         self.assertEqual((2, 2), l.get_stats())
         self.assertEqual(0, len(l))
         with self.assertRaises(TypeError):
-            l.pop()  # type: ignore
+            l.pop()
 
     def test_popitem(self):
         l = LRU(3)
@@ -265,7 +265,7 @@ class TestLRU(unittest.TestCase):
         self.assertEqual((2, '2'), l.popitem(True))
         with self.assertRaises(KeyError) as ke:
             l.popitem()
-            self.assertEqual('popitem(): LRU dict is empty', ke.args[0])  # type: ignore
+            self.assertEqual('popitem(): LRU dict is empty', ke.args[0])
         self.assertEqual((0, 0), l.get_stats())
 
     def test_stats(self):
