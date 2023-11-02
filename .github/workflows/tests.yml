@@ -2,15 +2,22 @@ name: Tests
 
 on: [push, pull_request]
 
-env:
-  PYTHON_VERSIONS: ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy-3.8", "pypy-3.9", "pypy-3.10"]
-
 jobs:
   test:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python: ${{fromJson(env.PYTHON_VERSIONS)}}
+        python:
+          [
+            "3.8",
+            "3.9",
+            "3.10",
+            "3.11",
+            "3.12",
+            "pypy-3.8",
+            "pypy-3.9",
+            "pypy-3.10",
+          ]
 
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +31,17 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python: ${{fromJson(env.PYTHON_VERSIONS)}}
+        python:
+          [
+            "3.8",
+            "3.9",
+            "3.10",
+            "3.11",
+            "3.12",
+            "pypy-3.8",
+            "pypy-3.9",
+            "pypy-3.10",
+          ]
 
     steps:
       - uses: actions/checkout@v4
