@@ -795,13 +795,13 @@ moduleinit(void)
 
 #if PY_MAJOR_VERSION < 3
     PyMODINIT_FUNC
-    initlru(void)
+    init_lru(void)
     {
         moduleinit();
     }
 #else
     PyMODINIT_FUNC
-    PyInit_lru(void)
+    PyInit__lru(void)
     {
         return moduleinit();
     }
