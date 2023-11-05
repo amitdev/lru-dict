@@ -6,7 +6,7 @@ authors = [
     {name = "Amit Dev"},
 ]
 dependencies = []
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 readme = "README.rst"
 license = {text = "MIT"}
 keywords = ["lru", "dict"]
