@@ -69,7 +69,7 @@ node_dealloc(Node* self)
     Py_DECREF(self->value);
     assert(self->prev == NULL);
     assert(self->next == NULL);
-    PyObject_Del((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject*
@@ -690,10 +690,10 @@ LRU_dealloc(LRU *self)
 {
     if (self->dict) {
         LRU_clear(self);
-        Py_DECREF(self->dict);
+        Py_CLEAR(self->dict);
         Py_XDECREF(self->callback);
     }
-    PyObject_Del((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 PyDoc_STRVAR(lru_doc,
@@ -731,7 +731,7 @@ static PyTypeObject LRUType = {
     0,                       /* tp_getattro */
     0,                       /* tp_setattro */
     0,                       /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,      /* tp_flags */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,      /* tp_flags */
     lru_doc,                 /* tp_doc */
     0,                       /* tp_traverse */
     0,                       /* tp_clear */
@@ -742,14 +742,14 @@ static PyTypeObject LRUType = {
     LRU_methods,             /* tp_methods */
     0,                       /* tp_members */
     0,                       /* tp_getset */
-    0,                       /* tp_base */
+    &PyBaseObject_Type,      /* tp_base */
     0,                       /* tp_dict */
     0,                       /* tp_descr_get */
     0,                       /* tp_descr_set */
     0,                       /* tp_dictoffset */
     (initproc)LRU_init,      /* tp_init */
     0,                       /* tp_alloc */
-    0,                       /* tp_new */
+    PyType_GenericNew,       /* tp_new */
 };
 
 #if PY_MAJOR_VERSION >= 3
