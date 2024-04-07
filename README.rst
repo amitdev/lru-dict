@@ -18,7 +18,7 @@ Usage
 
 This can be used to build a LRU cache. Usage is almost like a dict.
 
-.. code:: python
+.. code:: python3
 
   from lru import LRU
   l = LRU(5)         # Create an LRU container that can hold 5 items
