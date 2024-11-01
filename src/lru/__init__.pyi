@@ -4,6 +4,7 @@ from typing import (
     Generic,
     Hashable,
     Iterable,
+    MutableMapping,
     TypeVar,
     overload,
     Protocol
@@ -20,7 +21,7 @@ class __SupportsKeysAndGetItem(Protocol[_KT, _VT_co]):
     def __getitem__(self, __key: _KT) -> _VT_co: ...
 
 
-class LRU(Generic[_KT, _VT]):
+class LRU(Generic[_KT, _VT], MutableMapping[_KT, _VT]):
     @overload
     def __init__(self, size: int) -> None: ...
     @overload
