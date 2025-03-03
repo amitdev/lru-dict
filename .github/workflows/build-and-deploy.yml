@@ -26,8 +26,8 @@ jobs:
           CIBW_ARCHS_MACOS: x86_64 arm64 universal2
           CIBW_TEST_REQUIRES: .[test]
           CIBW_TEST_COMMAND: pytest {project}
-          # arm64 cannot be tested on a x86_64 CI runner
-          CIBW_TEST_SKIP: "*-macosx_arm64"
+          # cannot test the arm64 part for CPython 3.8 universal2/arm64, see https://github.com/pypa/cibuildwheel/pull/1169
+          CIBW_TEST_SKIP: "cp38-macosx_*:arm64"
           # pypy will need to be enabled for cibuildwheel 3
           CIBW_ENABLE: pypy
       - uses: actions/upload-artifact@v4
