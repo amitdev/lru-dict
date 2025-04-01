@@ -79,7 +79,7 @@ node_repr(Node* self)
 }
 
 static PyTypeObject NodeType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
+    PyObject_HEAD_INIT(NULL)
     "_lru.Node",              /* tp_name */
     sizeof(Node),            /* tp_basicsize */
     0,                       /* tp_itemsize */
@@ -199,7 +199,6 @@ lru_delete_last(LRU *self)
         return;
 
     if (self->callback) {
-
         arglist = Py_BuildValue("OO", n->key, n->value);
         result = PyObject_CallObject(self->callback, arglist);
         Py_XDECREF(result);
@@ -210,7 +209,7 @@ lru_delete_last(LRU *self)
     PUT_NODE(self->dict, n->key, NULL);
 }
 
-static Py_ssize_t
+static inline Py_ssize_t
 lru_length(LRU *self)
 {
     return PyDict_Size(self->dict);
@@ -219,11 +218,9 @@ lru_length(LRU *self)
 static PyObject *
 LRU_contains_key(LRU *self, PyObject *key)
 {
-    if (PyDict_Contains(self->dict, key)) {
+    if (PyDict_Contains(self->dict, key))
         Py_RETURN_TRUE;
-    } else {
-        Py_RETURN_FALSE;
-    }
+    Py_RETURN_FALSE;
 }
 
 static PyObject *
@@ -280,9 +277,8 @@ LRU_get(LRU *self, PyObject *args, PyObject *keywds)
     if (result)
         return result;
 
-    if (!default_obj) {
+    if (!default_obj)
         Py_RETURN_NONE;
-    }
 
     Py_INCREF(default_obj);
     return default_obj;
@@ -449,29 +445,17 @@ LRU_pop(LRU *self, PyObject *args, PyObject *keywds)
 static PyObject *
 LRU_peek_first_item(LRU *self)
 {
-    if (self->first) {
-        PyObject *tuple = PyTuple_New(2);
-        Py_INCREF(self->first->key);
-        PyTuple_SET_ITEM(tuple, 0, self->first->key);
-        Py_INCREF(self->first->value);
-        PyTuple_SET_ITEM(tuple, 1, self->first->value);
-        return tuple;
-    }
-    else Py_RETURN_NONE;
+    if (self->first)
+        return Py_BuildValue("OO", self->first->key, self->first->value);
+    Py_RETURN_NONE;
 }
 
 static PyObject *
 LRU_peek_last_item(LRU *self)
 {
-    if (self->last) {
-        PyObject *tuple = PyTuple_New(2);
-        Py_INCREF(self->last->key);
-        PyTuple_SET_ITEM(tuple, 0, self->last->key);
-        Py_INCREF(self->last->value);
-        PyTuple_SET_ITEM(tuple, 1, self->last->value);
-        return tuple;
-    }
-    else Py_RETURN_NONE;
+    if (self->last)
+        return Py_BuildValue("OO", self->last->key, self->last->value);
+    Py_RETURN_NONE;
 }
 
 static PyObject *
