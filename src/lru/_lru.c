@@ -199,14 +199,15 @@ lru_delete_last(LRU *self)
         return;
 
     if (self->callback) {
-
         arglist = Py_BuildValue("OO", n->key, n->value);
+        lru_remove_node(self, n);
         result = PyObject_CallObject(self->callback, arglist);
         Py_XDECREF(result);
         Py_DECREF(arglist);
     }
-
-    lru_remove_node(self, n);
+    else {
+        lru_remove_node(self, n);
+    }
     PUT_NODE(self->dict, n->key, NULL);
 }
 
