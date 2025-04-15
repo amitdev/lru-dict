@@ -374,6 +374,16 @@ class TestLRU(unittest.TestCase):
         self.assertEqual(counter[0], 2)  # callback invoked
         self.assertEqual(l.keys(), ['b'])
 
+    def test_subclassing(self):
+        class LRUChild(LRU):
+            ...
+
+        l = LRUChild(1)
+        l['a'] = 1
+        self.assertEqual(l['a'], 1)
+        self.assertEqual(l.keys(), ['a'])
+        self.assertEqual(l.values(), [1])
+
 
 if __name__ == '__main__':
     unittest.main()
