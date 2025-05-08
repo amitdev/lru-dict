@@ -713,7 +713,7 @@ PyDoc_STRVAR(lru_doc,
 "recently accessed n items.\n");
 
 static PyTypeObject LRUType = {
-    PyObject_HEAD_INIT(NULL)
+    PyVarObject_HEAD_INIT(NULL, 0)
     "_lru.LRU",               /* tp_name */
     sizeof(LRU),             /* tp_basicsize */
     0,                       /* tp_itemsize */
@@ -743,14 +743,14 @@ static PyTypeObject LRUType = {
     LRU_methods,             /* tp_methods */
     0,                       /* tp_members */
     0,                       /* tp_getset */
-    &PyBaseObject_Type,      /* tp_base */
+    0,                       /* tp_base */
     0,                       /* tp_dict */
     0,                       /* tp_descr_get */
     0,                       /* tp_descr_set */
     0,                       /* tp_dictoffset */
     (initproc)LRU_init,      /* tp_init */
     0,                       /* tp_alloc */
-    0,                       /* tp_new */
+    PyType_GenericNew,       /* tp_new */
 };
 
 #if PY_MAJOR_VERSION >= 3
@@ -772,10 +772,11 @@ moduleinit(void)
 {
     PyObject *m;
 
+    LRUType.tp_base = &PyBaseObject_Type;
+
     if (PyType_Ready(&NodeType) < 0)
         return NULL;
 
-    LRUType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&LRUType) < 0)
         return NULL;
 
