@@ -79,7 +79,7 @@ node_repr(Node* self)
 }
 
 static PyTypeObject NodeType = {
-    PyObject_HEAD_INIT(NULL)
+    PyVarObject_HEAD_INIT(NULL, 0)
     "_lru.Node",              /* tp_name */
     sizeof(Node),            /* tp_basicsize */
     0,                       /* tp_itemsize */
