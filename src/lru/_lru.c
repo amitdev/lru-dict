@@ -69,7 +69,7 @@ node_dealloc(Node* self)
     Py_DECREF(self->value);
     assert(self->prev == NULL);
     assert(self->next == NULL);
-    PyObject_Del((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject*
@@ -200,12 +200,14 @@ lru_delete_last(LRU *self)
 
     if (self->callback) {
         arglist = Py_BuildValue("OO", n->key, n->value);
+        lru_remove_node(self, n);
         result = PyObject_CallObject(self->callback, arglist);
         Py_XDECREF(result);
         Py_DECREF(arglist);
     }
-
-    lru_remove_node(self, n);
+    else {
+        lru_remove_node(self, n);
+    }
     PUT_NODE(self->dict, n->key, NULL);
 }
 
@@ -674,10 +676,10 @@ LRU_dealloc(LRU *self)
 {
     if (self->dict) {
         LRU_clear(self);
-        Py_DECREF(self->dict);
+        Py_CLEAR(self->dict);
         Py_XDECREF(self->callback);
     }
-    PyObject_Del((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 PyDoc_STRVAR(lru_doc,
@@ -715,7 +717,7 @@ static PyTypeObject LRUType = {
     0,                       /* tp_getattro */
     0,                       /* tp_setattro */
     0,                       /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,      /* tp_flags */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,      /* tp_flags */
     lru_doc,                 /* tp_doc */
     0,                       /* tp_traverse */
     0,                       /* tp_clear */
@@ -733,7 +735,7 @@ static PyTypeObject LRUType = {
     0,                       /* tp_dictoffset */
     (initproc)LRU_init,      /* tp_init */
     0,                       /* tp_alloc */
-    0,                       /* tp_new */
+    PyType_GenericNew,       /* tp_new */
 };
 
 #if PY_MAJOR_VERSION >= 3
@@ -755,11 +757,11 @@ moduleinit(void)
 {
     PyObject *m;
 
-    NodeType.tp_new = PyType_GenericNew;
+    LRUType.tp_base = &PyBaseObject_Type;
+
     if (PyType_Ready(&NodeType) < 0)
         return NULL;
 
-    LRUType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&LRUType) < 0)
         return NULL;
 
