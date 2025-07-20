@@ -6,16 +6,16 @@ jobs:
   test:
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         python:
           [
-            "3.8",
             "3.9",
             "3.10",
             "3.11",
             "3.12",
             "3.13",
-            "pypy-3.8",
+            "3.14",
             "pypy-3.9",
             "pypy-3.10",
             "pypy-3.11",
@@ -26,22 +26,31 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install .[test]
-      - run: pytest
+          allow-prereleases: true
+      - name: Update Python tools
+        run: |
+          python -m pip install -U pip
+          python -m pip install -U setuptools
+      - name: Install lru-dict with test extras
+        run: |
+          python -m pip install .[test]
+      - name: Run tests
+        run: |
+          python -m pytest
 
   install:
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         python:
           [
-            "3.8",
             "3.9",
             "3.10",
             "3.11",
             "3.12",
             "3.13",
-            "pypy-3.8",
+            "3.14",
             "pypy-3.9",
             "pypy-3.10",
             "pypy-3.11",
@@ -52,5 +61,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install .
-      - run: python -c "from lru import LRU"
+          allow-prereleases: true
+      - name: Update Python tools
+        run: |
+          python -m pip install -U pip
+          python -m pip install -U setuptools
+      - name: Install lru-dict
+        run: |
+          python -m pip install .
+      - name: Verify install
+        run: |
+          python -c "from lru import LRU"

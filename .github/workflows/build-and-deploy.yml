@@ -5,10 +5,19 @@ on: [push, pull_request]
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, windows-2022, macos-14]
+        os: [linux, windows, macos, ios]
+        include:
+          - os: linux
+            runs-on: ubuntu-22.04
+          - os: windows
+            runs-on: windows-2022
+          - os: macos
+            runs-on: macos-latest
+          - os: ios
+            runs-on: macos-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -19,19 +28,20 @@ jobs:
           platforms: all
       # Used to host cibuildwheel
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.23.0
+        uses: pypa/cibuildwheel@v3.0.0
         env:
           # configure cibuildwheel to build native archs ('auto'), and some emulated ones
+          CIBW_PLATFORM: ${{ matrix.os }}
           CIBW_ARCHS_LINUX: auto aarch64 ppc64le
           CIBW_ARCHS_MACOS: x86_64 arm64 universal2
-          CIBW_TEST_REQUIRES: .[test]
-          CIBW_TEST_COMMAND: pytest {project}
+          CIBW_ARCHS_IOS: arm64_iphoneos arm64_iphonesimulator x86_64_iphonesimulator
           # cannot test the arm64 part for CPython 3.8 universal2/arm64, see https://github.com/pypa/cibuildwheel/pull/1169
           CIBW_TEST_SKIP: cp38-macosx_arm64
           # pypy will need to be enabled for cibuildwheel 3
           CIBW_ENABLE: pypy
       - uses: actions/upload-artifact@v4
         with:
+          name: artifacts-${{ matrix.os }}
           path: ./wheelhouse/*.whl
           name: wheels-${{ matrix.os }}
 
@@ -44,6 +54,7 @@ jobs:
         run: pipx run build --sdist
       - uses: actions/upload-artifact@v4
         with:
+          name: artifacts-sdist
           path: dist/*.tar.gz
           name: source-dist
 
@@ -56,7 +67,9 @@ jobs:
     - uses: actions/setup-python@v5
     - uses: actions/download-artifact@v4
       with:
+        name: artifacts-*
         path: dist
+        merge-multiple: true
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@release/v1
       with:

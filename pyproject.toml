@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "lru-dict"
 version = "1.3.0"
@@ -6,23 +10,24 @@ authors = [
     {name = "Amit Dev"},
 ]
 dependencies = []
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 readme = "README.rst"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 keywords = ["lru", "dict"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Operating System :: POSIX",
     "Programming Language :: C",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -33,6 +38,8 @@ test = [
     "pytest",
 ]
 
-[build-system]
-requires = ["setuptools>=61", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.cibuildwheel]
+test-extras = ["test"]
+test-sources = ["test"]
+test-command = "python -m pytest -v"
+xbuild-tools = []
