@@ -480,6 +480,7 @@ LRU_popitem(LRU *self, PyObject *args, PyObject *kwds)
             return NULL;
     }
 #endif
+    // NOTE: `LRU_peek_*` increases `result` refcnt before returning it.
     if (pop_least_recent)
         result = LRU_peek_last_item(self);
     else
@@ -489,7 +490,6 @@ LRU_popitem(LRU *self, PyObject *args, PyObject *kwds)
         return NULL;
     }
     lru_ass_sub(self, PyTuple_GET_ITEM(result, 0), NULL);
-    Py_INCREF(result);
     return result;
 }
 
